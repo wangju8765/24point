@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🃏 算24点</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:#0f0f1a;color:#eee;touch-action:manipulation;-webkit-overflow-scrolling:touch}
+#app{width:100%;height:100%;display:flex;flex-direction:column;max-width:480px;margin:0 auto;position:relative;overflow:hidden}
+#header{padding:10px 14px 4px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;flex-wrap:wrap;gap:4px}
+#header h1{font-size:22px;font-weight:700;background:linear-gradient(135deg,#f7c948,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+#mode-group,#rule-group{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:14px;padding:3px}
+.mode-btn,.rule-btn{padding:5px 14px;border:none;border-radius:11px;font-size:13px;font-weight:600;cursor:pointer;transition:all .25s;color:rgba(255,255,255,.5);background:transparent}
+.mode-btn.active{background:#f59e0b;color:#1a1a2e;box-shadow:0 2px 8px rgba(245,158,11,.35)}
+.rule-btn.active{background:#818cf8;color:#1a1a2e;box-shadow:0 2px 8px rgba(129,140,248,.35)}
+#game-area{flex:1;position:relative;overflow:hidden;touch-action:none}
+#card-container{position:absolute;inset:0}
+.card{position:absolute;width:90px;height:125px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab;transition:box-shadow .2s,transform .15s;will-change:transform;touch-action:none}
+.card-inner{width:100%;height:100%;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.15)}
+.card-value{font-size:42px;font-weight:800;line-height:1;letter-spacing:-1px}
+.card-sub{position:absolute;bottom:6px;font-size:11px;color:rgba(255,255,255,.55);letter-spacing:.3px;white-space:nowrap;max-width:80%;overflow:hidden;text-overflow:ellipsis}
+.card-entering{animation:cardEnter .3s cubic-bezier(.34,1.56,.64,1)}
+.card-merging{animation:cardMerge .12s ease forwards}
+.card-merging-out{animation:cardMergeOut .1s ease forwards}
+@keyframes cardEnter{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes cardMerge{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
+@keyframes cardMergeOut{0%{transform:scale(1);opacity:1}100%{transform:scale(.5);opacity:0}}
+.card-color-0 .card-inner{background:linear-gradient(145deg,#2d1b69,#1a0e3e);border:1px solid rgba(139,92,246,.3)}
+.card-color-1 .card-inner{background:linear-gradient(145deg,#1b4a6b,#0e2a3e);border:1px solid rgba(56,189,248,.3)}
+.card-color-2 .card-inner{background:linear-gradient(145deg,#6b2d1b,#3e1a0e);border:1px solid rgba(251,146,60,.3)}
+.card-color-3 .card-inner{background:linear-gradient(145deg,#1b6b3d,#0e3e26);border:1px solid rgba(52,211,153,.3)}
+.card.dragging{z-index:100;transform:scale(1.08);box-shadow:0 12px 40px rgba(0,0,0,.45),0 0 0 2px rgba(245,158,11,.4);cursor:grabbing;transition:none}
+.card.dragging .card-inner{transform:rotate(2deg)}
+.card.hover-target-outline{outline:2px dashed rgba(245,158,11,.3);outline-offset:4px;border-radius:14px}
+#timer-center{position:absolute;top:30px;left:50%;transform:translateX(-50%);z-index:40;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none}
+#tc-icon{font-size:44px;line-height:1}
+#tc-display{font-size:28px;font-weight:800;letter-spacing:3px;color:rgba(255,255,255,.4);font-variant-numeric:tabular-nums}
+#bubble-layer{position:absolute;inset:0;pointer-events:none;z-index:150}
+.mini-card{position:absolute;width:72px;height:88px;border-radius:10px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:transform .15s;box-shadow:0 4px 12px rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.15);pointer-events:auto;background:rgba(20,20,40,.95);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.mini-card:active{transform:scale(.9)}
+.mini-card .mc-opname{width:100%;font-size:12px;font-weight:700;line-height:20px;text-align:center;letter-spacing:2px;color:rgba(255,255,255,.85);flex-shrink:0;border-radius:9px 9px 0 0}
+.mini-card .mc-result{font-size:28px;font-weight:800;line-height:1;letter-spacing:-.5px;flex:1;display:flex;align-items:center;justify-content:center}
+.mini-card.mc-add .mc-opname{background:rgba(99,102,241,.5)}
+.mini-card.mc-sub .mc-opname{background:rgba(236,72,153,.5)}
+.mini-card.mc-mul .mc-opname{background:rgba(52,211,153,.5)}
+.mini-card.mc-div .mc-opname{background:rgba(251,146,60,.5)}
+.mini-card.mc-disabled{opacity:.4!important;cursor:default;pointer-events:none!important}
+.mini-card.mc-disabled .mc-opname{background:rgba(100,100,100,.4)!important}
+.mini-card.mc-disabled .mc-result{color:rgba(255,255,255,.4)}
+#controls{padding:8px 10px 40px;display:flex;gap:5px;flex-shrink:0;align-items:center;justify-content:center}
+#controls button{border:none;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:3px;white-space:nowrap}
+#controls button:active{transform:scale(.93)}
+.btn-undo{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7)}
+.btn-undo:hover{background:rgba(255,255,255,.12)}
+.btn-undo:disabled{opacity:.25;cursor:default}
+.btn-new{background:rgba(245,158,11,.15);color:#f59e0b}
+.btn-new:hover{background:rgba(245,158,11,.25)}
+.btn-reset{background:rgba(59,130,246,.15);color:#60a5fa}
+.btn-reset:hover{background:rgba(59,130,246,.25)}
+.btn-hint{background:rgba(99,102,241,.15);color:#818cf8;font-size:13px;padding:8px 12px}
+.btn-hint:hover{background:rgba(99,102,241,.25)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:200;animation:fadeIn .3s}
+.modal-overlay.show{display:flex}
+.modal-box{background:linear-gradient(145deg,#1e1e3a,#15152a);border-radius:24px;padding:32px 28px 24px;text-align:center;max-width:320px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.08);animation:modalEnter .35s cubic-bezier(.34,1.56,.64,1)}
+@keyframes fadeIn{0%{opacity:0}100%{opacity:1}}
+@keyframes modalEnter{0%{transform:scale(.8) translateY(20px);opacity:0}100%{transform:scale(1) translateY(0);opacity:1}}
+.win-time-big{font-size:56px;font-weight:800;line-height:1.1;background:linear-gradient(135deg,#f7c948,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
+.win-desc{font-size:16px!important}
+.modal-desc{font-size:15px;color:rgba(255,255,255,.6);margin-bottom:4px;line-height:1.5}
+.modal-buttons{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:0}
+.modal-buttons button{border:none;border-radius:14px;padding:12px 24px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s}
+.modal-buttons button:active{transform:scale(.95)}
+.modal-btn-primary{background:#f59e0b;color:#1a1a2e}
+.modal-btn-primary:hover{background:#f7c948;box-shadow:0 4px 16px rgba(245,158,11,.35)}
+.modal-btn-secondary{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7)}
+.modal-btn-secondary:hover{background:rgba(255,255,255,.12)}
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.8);color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;backdrop-filter:blur(8px)}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <h1>🃏 算24点</h1>
+    <div id="mode-group">
+      <button class="mode-btn active" data-mode="easy">简单</button>
+      <button class="mode-btn" data-mode="normal">复杂</button>
+    </div>
+    <div id="rule-group">
+      <button class="rule-btn active" data-rule="int">整数</button>
+      <button class="rule-btn" data-rule="frac">分数</button>
+    </div>
+  </div>
+  <div id="game-area">
+    <div id="timer-center">
+      <div id="tc-icon">⏱</div>
+      <div id="tc-display">0:00</div>
+    </div>
+    <div id="card-container"></div>
+    <div id="bubble-layer"></div>
+  </div>
+  <div id="controls">
+    <button class="btn-hint" id="hint-btn">💡 提示</button>
+    <button class="btn-reset" id="reset-btn">🔄 重来</button>
+    <button class="btn-undo" id="undo-btn" disabled>↩ 退回</button>
+    <button class="btn-new" id="new-game-btn">🎲 新题</button>
+  </div>
+</div>
+<div class="modal-overlay" id="win-modal">
+  <div class="modal-box">
+    <div class="win-time-big" id="win-time-big"></div>
+    <div class="modal-desc win-desc">🎉 你成功算出了 <strong>24</strong>！</div>
+    <div class="modal-buttons">
+      <button class="modal-btn-secondary" onclick="closeModal('win-modal'); state.gameOver = false;">继续回顾</button>
+      <button class="modal-btn-primary" id="win-next-btn">下一题 →</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="hint-modal">
+  <div class="modal-box">
+    <div class="modal-icon">💡</div>
+    <div class="modal-title">提示</div>
+    <div class="modal-desc" id="hint-text"></div>
+    <div class="modal-buttons" style="margin-top:16px">
+      <button class="modal-btn-primary" onclick="closeModal('hint-modal')">知道了</button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<script>
+// Sound system
+const Sound = (() => {
+  let ctx = null;
+  function getCtx() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function play(freq, dur, type, vol, delay) {
+    const c = getCtx();
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(freq, c.currentTime + (delay || 0));
+    g.gain.setValueAtTime(vol || 0.15, c.currentTime + (delay || 0));
+    g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + (delay || 0) + dur);
+    o.connect(g); g.connect(c.destination);
+    o.start(c.currentTime + (delay || 0));
+    o.stop(c.currentTime + (delay || 0) + dur);
+  }
+  return {
+    pickUp() { play(600, 0.08, 'sine', 0.1); },
+    snapBack() { play(300, 0.1, 'triangle', 0.08); },
+    bubblesAppear() { play(880, 0.06, 'sine', 0.06); },
+    merge() { play(523, 0.12, 'sine', 0.12, 0); play(659, 0.12, 'sine', 0.12, 0.07); play(784, 0.15, 'sine', 0.1, 0.14); },
+    win() { [523, 587, 659, 784, 880, 1047].forEach((n, i) => play(n, 0.2, 'sine', 0.12, i * 0.1)); },
+  };
+})();
+
+// DOM refs
+const cardContainer = document.getElementById('card-container');
+const bubbleLayer = document.getElementById('bubble-layer');
+const undoBtn = document.getElementById('undo-btn');
+const newGameBtn = document.getElementById('new-game-btn');
+const hintBtn = document.getElementById('hint-btn');
+const winModal = document.getElementById('win-modal');
+const hintModal = document.getElementById('hint-modal');
+const toast = document.getElementById('toast');
+
+// Constants
+const TARGET = 24, CARD_W = 90, CARD_H = 125;
+const PROXIMITY_THRESHOLD = 150, FULL_OPACITY_DISTANCE = 50, MERGE_DROP_THRESHOLD = 50, COLORS = 4;
+
+// Timer
+let gameStartTime = 0, timerInterval = null;
+function startTimer() { stopTimer(); gameStartTime = Date.now(); timerInterval = setInterval(updateTimerDisplay, 1000); updateTimerDisplay(); }
+function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
+function updateTimerDisplay() {
+  const e = Math.floor((Date.now() - gameStartTime) / 1000);
+  const d = document.getElementById('tc-display');
+  if (d) d.textContent = Math.floor(e / 60) + ':' + ((e % 60) < 10 ? '0' : '') + (e % 60);
+}
+function getElapsedSeconds() { return Math.floor((Date.now() - gameStartTime) / 1000); }
+function formatTimeNear(s) { return Math.floor(s / 60) > 0 ? Math.floor(s / 60) + '分' + (s % 60) + '秒' : s + '秒'; }
+
+// Math helpers
+function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+function fracStr(n, d) {
+  if (d === 0) return String(n);
+  if (d < 0) { n = -n; d = -d; }
+  const g = gcd(Math.abs(n), Math.abs(d));
+  n /= g; d /= g;
+  return d === 1 ? String(n) : n + '/' + d;
+}
+function fracOp(aN, aD, bN, bD, op) {
+  // Compute (aN/aD) op (bN/bD) -> {num, den}
+  if (op === '+') return { num: aN*bD + bN*aD, den: aD*bD };
+  if (op === '×') return { num: aN*bN, den: aD*bD };
+  if (op === '−') {
+    const left = aN*bD, right = bN*aD;
+    return left >= right ? { num: left-right, den: aD*bD } : { num: right-left, den: aD*bD };
+  }
+  if (op === '÷') return { num: aN*bD, den: aD*bN };
+  return { num: 0, den: 1 };
+}
+function simplifyFrac(num, den) {
+  if (den === 0) return { num, den: 1 };
+  if (den < 0) { num = -num; den = -den; }
+  const g = gcd(Math.abs(num), Math.abs(den));
+  return { num: num/g, den: den/g };
+}
+
+// State
+let state = { mode:'easy', rule:'int', cards:[], history:[], initialPuzzle:null, draggedCard:null, dragOffsetX:0, dragOffsetY:0, startX:0, startY:0, startZIndex:'', targetCard:null, lockedCard:null, steps:0, gameOver:false, nextId:0 };
+const mergeParents = {};
+
+// Puzzle generation
+function generateNumbers(mode, rule) {
+  const max = mode === 'easy' ? 10 : 13, min = 1;
+  const solver = rule === 'int' ? canSolveInt : canSolveFrac;
+  let nums, att = 0;
+  do { nums = [min + Math.random() * max | 0, min + Math.random() * max | 0, min + Math.random() * max | 0, min + Math.random() * max | 0]; att++; } while (!solver(nums) && att < 5000);
+  return nums;
+}
+function canSolveFrac(n) {
+  if (n.length === 1) return Math.abs(n[0] - 24) < 1e-4;
+  for (let i = 0; i < n.length; i++) for (let j = i + 1; j < n.length; j++) {
+    const rem = n.filter((_,k)=>k!==i&&k!==j), a = n[i], b = n[j];
+    const rs = [a + b, a * b, Math.max(a,b) - Math.min(a,b)];
+    const mn = Math.min(a,b), mx = Math.max(a,b);
+    if (mn) rs.push(mx / mn);
+    for (const r of rs) if (canSolveFrac([...rem, r])) return true;
+  }
+  return false;
+}
+function canSolveInt(n) {
+  if (n.length === 1) return Math.abs(n[0] - 24) < 1e-4;
+  for (let i = 0; i < n.length; i++) for (let j = i + 1; j < n.length; j++) {
+    const rem = n.filter((_,k)=>k!==i&&k!==j), a = n[i], b = n[j];
+    const rs = [a + b, a * b, Math.max(a,b) - Math.min(a,b)];
+    const mn = Math.min(a,b), mx = Math.max(a,b);
+    if (mn && mx % mn === 0) rs.push(mx / mn);
+    for (const r of rs) if (Number.isInteger(r) && canSolveInt([...rem, r])) return true;
+  }
+  return false;
+}
+
+function getCardLabel(v) { return Number.isInteger(v) ? String(v) : (v.toFixed(2).replace(/\.?0+$/, '')); }
+function createFracEl(str) {
+  // Return null so fallback to text display
+  return null;
+}
+
+function getBubblesForPair(ca, cb) {
+  const r = [], a = ca.value, b = cb.value;
+  const aN = ca.num || a, aD = ca.den || 1, bN = cb.num || b, bD = cb.den || 1;
+  const isFrac = state.rule === 'frac';
+  // +, ×: always valid
+  const add = fracOp(aN, aD, bN, bD, '+');
+  r.push({ op:'+', result:add.num/add.den, name:'加', label:getCardLabel(a)+'加'+getCardLabel(b), valid:true, frac:isFrac && add.den !== 1 ? fracStr(add.num, add.den) : null });
+  const mul = fracOp(aN, aD, bN, bD, '×');
+  r.push({ op:'×', result:mul.num/mul.den, name:'乘', label:getCardLabel(a)+'乘'+getCardLabel(b), valid:true, frac:isFrac && mul.den !== 1 ? fracStr(mul.num, mul.den) : null });
+  // −: big - small (both modes)
+  const sub = fracOp(aN, aD, bN, bD, '−');
+  r.push({ op:'−', result:sub.num/sub.den, name:'减', label:getCardLabel(Math.max(a,b))+'减'+getCardLabel(Math.min(a,b)), valid:true, frac:isFrac && sub.den !== 1 ? fracStr(sub.num, sub.den) : null });
+  // ÷: int mode=max/min, frac mode=dragged/&darr;
+  if (isFrac) {
+    const div = fracOp(aN, aD, bN, bD, '÷');
+    r.push({ op:'÷', result:div.num/div.den, name:'除', label:getCardLabel(a)+'除'+getCardLabel(b), valid:true, frac:div.den !== 1 ? fracStr(div.num, div.den) : null });
+  } else {
+    const mn = Math.min(a,b), mx = Math.max(a,b);
+    if (mn) {
+      const intDiv = mx / mn;
+      r.push({ op:'÷', result:intDiv, name:'除', label:getCardLabel(mx)+'除'+getCardLabel(mn), valid:Number.isInteger(intDiv), frac:null });
+    }
+  }
+  return r;
+}
+
+function createCardEl(v, h, x, y, ci, ac, zi, cid, fd) {
+  const el = document.createElement('div');
+  el.className = 'card card-color-' + (ci % COLORS);
+  if (ac) el.classList.add(ac);
+  el.style.left = x + 'px'; el.style.top = y + 'px';
+  if (zi !== undefined) el.style.zIndex = zi;
+  el.dataset.value = v; el.dataset.history = h || ''; el.dataset.x = x; el.dataset.y = y; el.dataset.colorIdx = ci;
+  const inner = document.createElement('div'); inner.className = 'card-inner';
+  const val = document.createElement('div'); val.className = 'card-value';
+  val.textContent = fd || getCardLabel(v);
+  inner.appendChild(val);
+  if (h) { const sub = document.createElement('div'); sub.className = 'card-sub'; sub.textContent = h; inner.appendChild(sub); }
+  el.appendChild(inner);
+  if (cid !== undefined && cid !== null) {
+    el.addEventListener('touchend', e => { if (!wasDragMoved && !isLockedMode) tapUndoCard(cid); });
+    el.addEventListener('mouseup', e => { if (!wasDragMoved && !isLockedMode) tapUndoCard(cid); });
+  }
+  return el;
+}
+
+function tapUndoCard(cid) {
+  if (cid === null || state.gameOver || isLockedMode || isMerging || wasDragMoved) return;
+  const p = mergeParents[cid];
+  if (!p) return;
+  const card = getCardState(cid);
+  if (!card) return;
+  saveSnapshot();
+  const ca = { id:p.a.id, value:p.a.value, num:p.a.num, den:p.a.den, history:p.a.history, x:p.a.x, y:p.a.y, colorIdx:p.a.colorIdx, entering:true, fracDisplay:p.a.fracDisplay };
+  const cb = { id:p.b.id, value:p.b.value, num:p.b.num, den:p.b.den, history:p.b.history, x:p.b.x, y:p.b.y, colorIdx:p.b.colorIdx, entering:true, fracDisplay:p.b.fracDisplay };
+  if (state.nextId <= p.a.id) state.nextId = p.a.id + 1;
+  if (state.nextId <= p.b.id) state.nextId = p.b.id + 1;
+  state.cards = state.cards.filter(c => c.id !== cid);
+  state.cards.push(ca, cb);
+  state.steps = Math.max(0, state.steps - 1);
+  delete mergeParents[cid];
+  hideBubbles(); renderGame(true); updateStatus();
+  showToast('已拆分');
+}
+
+function getCardState(id) { return state.cards.find(c => c.id === id); }
+function getCardEl(id) { return cardContainer.querySelector('.card[data-card-id="' + id + '"]'); }
+
+function computeCardPositions(count, cw, ch, pw, ph) {
+  const g = 28;
+  if (count === 4) { const tw = cw * 2 + g, th = ch * 2 + g, sx = (pw - tw) / 2, sy = (ph - th) / 2; return [{x:sx,y:sy},{x:sx+cw+g,y:sy},{x:sx,y:sy+ch+g},{x:sx+cw+g,y:sy+ch+g}]; }
+  if (count === 3) { const tw = cw * 2 + g, sx = (pw - tw) / 2, ty = ph / 2 - ch - g / 2, by = ph / 2 + g / 2; return [{x:(pw-cw)/2,y:ty},{x:sx,y:by},{x:sx+cw+g,y:by}]; }
+  if (count === 2) { const tw = cw * 2 + g, sx = (pw - tw) / 2, sy = (ph - ch) / 2; return [{x:sx,y:sy},{x:sx+cw+g,y:sy}]; }
+  if (count === 1) return [{x:(pw-cw)/2,y:(ph-ch)/2}];
+  return [];
+}
+
+function renderGame(kp) {
+  isLockedMode = false; isDragging = false; dragCardId = null;
+  state.draggedCard = null; state.targetCard = null; state.lockedCard = null; hideBubbles();
+  const rect = cardContainer.getBoundingClientRect();
+  const cw = rect.width || 340, ch = rect.height || 450;
+  cardContainer.innerHTML = '';
+  if (!state.cards.length) return;
+  const pos = kp ? state.cards.map(c => ({x:c.x,y:c.y})) : computeCardPositions(state.cards.length, CARD_W, CARD_H, cw, ch);
+  state.cards.forEach((card, i) => {
+    const p = pos[i]; card.x = p.x; card.y = p.y;
+    const ac = card.entering ? 'card-entering' : null;
+    delete card.entering;
+    const el = createCardEl(card.value, card.history, card.x, card.y, card.colorIdx, ac, (i+1)*10, card.id, card.fracDisplay);
+    el.dataset.cardId = card.id;
+    cardContainer.appendChild(el);
+  });
+  updateStatus();
+}
+function updateStatus() { undoBtn.disabled = state.history.length === 0; }
+
+function showBubbles(draggedId, targetId) {
+  const dragged = getCardState(draggedId), target = getCardState(targetId);
+  if (!dragged || !target) return;
+  const ops = getBubblesForPair(dragged, target);
+  bubbleLayer.innerHTML = ''; bubbleLayer.style.pointerEvents = 'auto';
+  Sound.bubblesAppear();
+  const targetEl = getCardEl(targetId);
+  if (!targetEl) return;
+  const tx = target.x, ty = target.y, mw = 72, mh = 88, gap = 6;
+  const visualOrder = [0, 2, 1, 3], totalW = 4 * mw + 3 * gap;
+  const parentRect = cardContainer.getBoundingClientRect();
+  const pw = parentRect.width, ph = parentRect.height;
+  const rowX = Math.max(2, Math.min(pw - totalW - 2, tx + (CARD_W - totalW) / 2)), rowY = Math.max(2, ty - mh - 8);
+  visualOrder.forEach((oi, i) => {
+    const b = ops[oi]; if (!b) return;
+    const mc = document.createElement('div');
+    mc.className = 'mini-card mc-' + (b.op === '+' ? 'add' : b.op === '\u2212' ? 'sub' : b.op === '\u00d7' ? 'mul' : 'div');
+    const opName = document.createElement('div'); opName.className = 'mc-opname'; opName.textContent = b.name; mc.appendChild(opName);
+    const res = document.createElement('div'); res.className = 'mc-result';
+    res.textContent = (state.rule === 'frac' && b.frac) ? b.frac : getCardLabel(b.result);
+    mc.appendChild(res);
+    mc.style.left = (rowX + i * (mw + gap)) + 'px'; mc.style.top = rowY + 'px'; mc.style.opacity = '1';
+    mc.dataset.targetId = targetId; mc.dataset.draggedId = draggedId; mc.dataset.op = b.op; mc.dataset.result = b.result;
+    if (b.valid !== false) {
+      mc.addEventListener('click', e => { e.stopPropagation(); performMerge(draggedId, targetId, b.op, b.result, b.label); });
+      mc.addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); performMerge(draggedId, targetId, b.op, b.result, b.label); });
+    } else { mc.classList.add('mc-disabled'); }
+    bubbleLayer.appendChild(mc);
+  });
+}
+
+function updateBubbleOpacity(dist) {
+  const mcs = bubbleLayer.querySelectorAll('.mini-card');
+  if (!mcs.length) return;
+  const opacity = dist < PROXIMITY_THRESHOLD ? Math.max(0.15, Math.min(1, 1 - (dist - FULL_OPACITY_DISTANCE) / (PROXIMITY_THRESHOLD - FULL_OPACITY_DISTANCE))) : 0;
+  mcs.forEach(mc => mc.style.opacity = opacity);
+}
+
+function hideBubbles() { bubbleLayer.innerHTML = ''; bubbleLayer.style.pointerEvents = 'none'; }
+
+function findClosestCard(cx, cy, excludeId) {
+  const els = cardContainer.querySelectorAll('.card');
+  let closest = null, minDist = Infinity;
+  for (const el of els) {
+    const id = parseInt(el.dataset.cardId);
+    if (id === excludeId) continue;
+    const x = parseFloat(el.style.left), y = parseFloat(el.style.top);
+    const dist = Math.hypot(cx - x - CARD_W / 2, cy - y - CARD_H / 2);
+    if (dist < minDist) { minDist = dist; closest = { id, dist }; }
+  }
+  return closest;
+}
+
+function getPointerPos(e) {
+  if (e.changedTouches && e.changedTouches.length > 0) return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+  if (e.touches && e.touches.length > 0) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  return { x: e.clientX, y: e.clientY };
+}
+function getContainerPos(e) { const p = getPointerPos(e), r = cardContainer.getBoundingClientRect(); return { x: p.x - r.left, y: p.y - r.top }; }
+function restoreZIndex(el) { if (el && state.startZIndex) el.style.zIndex = state.startZIndex; }
+
+let isDragging = false, dragCardId = null, isLockedMode = false, ignoreClickUntil = 0, isMerging = false, wasDragMoved = false;
+
+function onPointerDown(e) {
+  if (state.gameOver) return;
+  const pos = getPointerPos(e), el = document.elementFromPoint(pos.x, pos.y), cardEl = el?.closest('.card');
+  if (isLockedMode && !cardEl) return;
+  if (!cardEl) return;
+  const id = parseInt(cardEl.dataset.cardId), isFloating = isLockedMode;
+  if (isLockedMode) clearLockedMode(false);
+  const cp = getContainerPos(e);
+  isDragging = true; dragCardId = id; wasDragMoved = false;
+  state.draggedCard = id; state.dragOffsetX = cp.x - parseFloat(cardEl.style.left); state.dragOffsetY = cp.y - parseFloat(cardEl.style.top);
+  if (isFloating) { const cs = getCardState(id); state.startX = cs ? cs.x : parseFloat(cardEl.style.left); state.startY = cs ? cs.y : parseFloat(cardEl.style.top); state.startZIndex = ''; }
+  else { state.startX = parseFloat(cardEl.style.left); state.startY = parseFloat(cardEl.style.top); state.startZIndex = cardEl.style.zIndex || ''; }
+  cardEl.classList.add('dragging'); cardEl.style.zIndex = '100';
+  Sound.pickUp();
+  cardContainer.querySelectorAll('.hover-target-outline').forEach(el => el.classList.remove('hover-target-outline'));
+  e.preventDefault();
+}
+
+function onPointerMove(e) {
+  if (!isDragging || dragCardId === null) return;
+  const cp = getContainerPos(e); wasDragMoved = true;
+  const el = getCardEl(dragCardId);
+  if (el) { el.style.left = (cp.x - state.dragOffsetX) + 'px'; el.style.top = (cp.y - state.dragOffsetY) + 'px'; }
+  const closest = findClosestCard(cp.x, cp.y, dragCardId);
+  cardContainer.querySelectorAll('.hover-target-outline').forEach(el => el.classList.remove('hover-target-outline'));
+  if (closest && closest.dist < PROXIMITY_THRESHOLD) { const te = getCardEl(closest.id); if (te) te.classList.add('hover-target-outline'); }
+  if (closest && closest.dist < PROXIMITY_THRESHOLD && closest.id !== state.targetCard) { state.targetCard = closest.id; showBubbles(dragCardId, closest.id); }
+  else if (closest && closest.dist < PROXIMITY_THRESHOLD) updateBubbleOpacity(closest.dist);
+  else { state.targetCard = null; hideBubbles(); }
+  e.preventDefault();
+}
+
+function clearLockedMode(snapBack) {
+  isLockedMode = false; hideBubbles();
+  if (snapBack && dragCardId !== null) {
+    const el = getCardEl(dragCardId);
+    if (el) {
+      restoreZIndex(el);
+      el.style.transition = 'left .25s, top .25s';
+      const card = getCardState(dragCardId);
+      if (card) { el.style.left = card.x + 'px'; el.style.top = card.y + 'px'; }
+      setTimeout(() => { if (el) el.style.transition = ''; }, 300);
+    }
+  }
+  state.targetCard = null; state.lockedCard = null; state.draggedCard = null;
+  dragCardId = null; isDragging = false; state.startZIndex = '';
+  cardContainer.querySelectorAll('.hover-target-outline').forEach(el => el.classList.remove('hover-target-outline'));
+}
+
+function onPointerUp(e) {
+  if (!isDragging || dragCardId === null) return;
+  const cp = getContainerPos(e), el = getCardEl(dragCardId);
+  if (el) el.classList.remove('dragging');
+  const closest = findClosestCard(cp.x, cp.y, dragCardId);
+  if (closest && closest.dist <= MERGE_DROP_THRESHOLD) {
+    state.lockedCard = closest.id; state.targetCard = closest.id;
+    const mcs = bubbleLayer.querySelectorAll('.mini-card');
+    mcs.forEach(mc => { mc.style.opacity = '1'; mc.style.display = 'flex'; });
+    isLockedMode = true; ignoreClickUntil = Date.now() + 300; isDragging = false;
+  } else {
+    if (el) {
+      const moved = Math.abs(parseFloat(el.style.left) - state.startX) > 2 || Math.abs(parseFloat(el.style.top) - state.startY) > 2;
+      restoreZIndex(el);
+      el.style.transition = 'left .25s, top .25s'; el.style.left = state.startX + 'px'; el.style.top = state.startY + 'px';
+      setTimeout(() => { if (el) el.style.transition = ''; }, 300);
+      if (moved) Sound.snapBack();
+    }
+    hideBubbles(); isDragging = false; dragCardId = null;
+    state.draggedCard = null; state.targetCard = null; state.lockedCard = null; state.startZIndex = '';
+  }
+  cardContainer.querySelectorAll('.hover-target-outline').forEach(el => el.classList.remove('hover-target-outline'));
+  e.preventDefault();
+}
+
+function onPointerCancel() { clearLockedMode(true); }
+
+function onBackgroundClick(e) {
+  if (!isLockedMode || Date.now() < ignoreClickUntil) return;
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  if (el?.closest('.mini-card') || el?.closest('.card')) return;
+  clearLockedMode(true);
+}
+
+function saveSnapshot() {
+  state.history.push(JSON.parse(JSON.stringify(state.cards.map(c => ({id:c.id,value:c.value,history:c.history,x:c.x,y:c.y,colorIdx:c.colorIdx})))));
+  if (state.history.length > 50) state.history.shift();
+}
+
+function performMerge(di, ti, op, result, label) {
+  if (state.gameOver || isMerging) return;
+  isMerging = true; isLockedMode = false; isDragging = false;
+  Sound.merge();
+  const dc = getCardState(di), tc = getCardState(ti);
+  if (!dc || !tc) { isMerging = false; return; }
+  saveSnapshot();
+  const de = getCardEl(di), te = getCardEl(ti);
+  if (de) de.classList.add('card-merging-out');
+  if (te) te.classList.add('card-merging');
+  const ci = (dc.colorIdx + tc.colorIdx) % COLORS;
+  setTimeout(() => {
+    state.cards = state.cards.filter(c => c.id !== di && c.id !== ti);
+    let num = result, den = 1;
+    if (state.rule === 'frac') {
+      const aN = dc.num || dc.value, aD = dc.den || 1, bN = tc.num || tc.value, bD = tc.den || 1;
+      const f = fracOp(aN, aD, bN, bD, op);
+      const s = simplifyFrac(f.num, f.den);
+      num = s.num; den = s.den;
+    }
+    const fd = (state.rule === 'frac' && den !== 1) ? fracStr(num, den) : null;
+    const nc = { id: state.nextId++, value: num/den, num, den, history: label, x: tc.x, y: tc.y, colorIdx: ci, entering: true, fracDisplay: fd };
+    mergeParents[nc.id] = {
+      a:{id:dc.id,value:dc.value,num:dc.num||dc.value,den:dc.den||1,history:dc.history,colorIdx:dc.colorIdx,x:dc.x,y:dc.y,fracDisplay:dc.fracDisplay},
+      b:{id:tc.id,value:tc.value,num:tc.num||tc.value,den:tc.den||1,history:tc.history,colorIdx:tc.colorIdx,x:tc.x,y:tc.y,fracDisplay:tc.fracDisplay},
+    };
+    state.cards.push(nc); state.steps++;
+    hideBubbles(); renderGame(true); isMerging = false;
+    checkGameState(); updateStatus();
+  }, 100);
+  dragCardId = null; state.draggedCard = null; state.targetCard = null; state.lockedCard = null;
+}
+
+function checkGameState() {
+  if (state.cards.length === 1 && Math.abs(state.cards[0].value - 24) < 1e-4) {
+    state.gameOver = true; stopTimer(); Sound.win();
+    document.getElementById('win-time-big').textContent = formatTimeNear(getElapsedSeconds());
+    setTimeout(() => winModal.classList.add('show'), 500);
+  }
+}
+
+function undo() {
+  if (state.history.length === 0) return;
+  closeModal('win-modal'); state.gameOver = false;
+  const p = state.history.pop(); state.cards = p; state.steps = Math.max(0, state.steps - 1);
+  hideBubbles(); renderGame(true); updateStatus();
+}
+
+function resetGame() {
+  if (!state.initialPuzzle) { newGame(); return; }
+  closeModal('win-modal'); closeModal('hint-modal');
+  for (const k in mergeParents) delete mergeParents[k];
+  state.history = []; state.steps = 0; state.gameOver = false;
+  state.draggedCard = null; state.targetCard = null; state.lockedCard = null; hideBubbles();
+  const rect = cardContainer.getBoundingClientRect();
+  const cw = rect.width || 340, ch = rect.height || 450;
+  const pos = computeCardPositions(4, CARD_W, CARD_H, cw, ch);
+  startTimer();
+  state.cards = state.initialPuzzle.map((v, i) => ({ id: state.nextId++, value: v, history: '', x: pos[i].x, y: pos[i].y, colorIdx: i, entering: true }));
+  renderGame(true); updateStatus();
+}
+
+function showHint() {
+  if (state.cards.length < 2) return;
+  for (let i = 0; i < state.cards.length; i++) for (let j = i + 1; j < state.cards.length; j++) {
+    const a = state.cards[i].value, b = state.cards[j].value;
+    const rem = state.cards.filter((_,k) => k !== i && k !== j).map(c => c.value);
+    const ops = [{op:'加',r:a+b},{op:'乘',r:a*b},{op:'减',r:Math.max(a,b)-Math.min(a,b)}];
+    const mn = Math.min(a,b), mx = Math.max(a,b);
+    if (mn && (state.rule === 'frac' || mx % mn === 0)) ops.push({op:'除',r:mx/mn});
+    for (const to of ops) {
+      const s = state.rule === 'int' ? canSolveInt : canSolveFrac;
+      if (s([...rem, to.r])) { document.getElementById('hint-text').innerHTML = '\u8bd5\u8bd5\u628a <strong>' + getCardLabel(a) + '</strong> \u62d6\u5230 <strong>' + getCardLabel(b) + '</strong> \u4e0a\uff0c\u7528 <strong>' + to.op + '</strong> \ud83d\udc46'; hintModal.classList.add('show'); return; }
+    }
+  }
+  document.getElementById('hint-text').textContent = '\u8fd9\u9053\u9898\u662f\u6709\u89e3\u7684\uff0c\u591a\u8bd5\u8bd5\u4e0d\u540c\u7684\u7ec4\u5408\u65b9\u5f0f\u5427\uff01';
+  hintModal.classList.add('show');
+}
+
+function newGame() {
+  closeModal('win-modal'); closeModal('hint-modal');
+  for (const k in mergeParents) delete mergeParents[k];
+  state.history = []; state.steps = 0; state.gameOver = false;
+  state.draggedCard = null; state.targetCard = null; state.lockedCard = null; hideBubbles();
+  const nums = generateNumbers(state.mode, state.rule);
+  const rect = cardContainer.getBoundingClientRect();
+  const cw = rect.width || 340, ch = rect.height || 450;
+  const pos = computeCardPositions(4, CARD_W, CARD_H, cw, ch);
+  startTimer(); state.initialPuzzle = [...nums];
+  state.cards = nums.map((v, i) => ({ id: state.nextId++, value: v, history: '', x: pos[i].x, y: pos[i].y, colorIdx: i, entering: true }));
+  renderGame(true); updateStatus();
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+let toastTimer = null;
+function showToast(msg) { toast.textContent = msg; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 1500); }
+
+function init() {
+  document.querySelectorAll('.mode-btn').forEach(btn => { btn.addEventListener('click', () => { document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); state.mode = btn.dataset.mode; newGame(); }); });
+  document.querySelectorAll('.rule-btn').forEach(btn => { btn.addEventListener('click', () => { document.querySelectorAll('.rule-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); state.rule = btn.dataset.rule; newGame(); }); });
+  undoBtn.addEventListener('click', undo);
+  document.getElementById('reset-btn').addEventListener('click', resetGame);
+  newGameBtn.addEventListener('click', newGame);
+  hintBtn.addEventListener('click', showHint);
+  document.getElementById('win-next-btn').addEventListener('click', newGame);
+  document.addEventListener('click', onBackgroundClick);
+  cardContainer.addEventListener('touchstart', onPointerDown, { passive: false });
+  cardContainer.addEventListener('touchmove', onPointerMove, { passive: false });
+  cardContainer.addEventListener('touchend', onPointerUp, { passive: false });
+  cardContainer.addEventListener('touchcancel', onPointerCancel, { passive: false });
+  cardContainer.addEventListener('mousedown', onPointerDown);
+  document.addEventListener('mousemove', onPointerMove);
+  document.addEventListener('mouseup', onPointerUp);
+  cardContainer.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  document.addEventListener('gesturechange', e => e.preventDefault());
+  document.addEventListener('gestureend', e => e.preventDefault());
+  let layoutTimer;
+  function relayout() { clearTimeout(layoutTimer); layoutTimer = setTimeout(() => { isDragging = false; isLockedMode = false; dragCardId = null; wasDragMoved = false; hideBubbles(); renderGame(false); }, 300); }
+  window.addEventListener('resize', relayout);
+  window.addEventListener('orientationchange', relayout);
+  newGame();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
