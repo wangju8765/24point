@@ -17,10 +17,15 @@ var _hmt = _hmt || [];
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:#0f0f1a;color:#eee;touch-action:manipulation;-webkit-overflow-scrolling:touch}
 #app{width:100%;height:100%;display:flex;flex-direction:column;max-width:480px;margin:0 auto;position:relative;overflow:hidden}
-#header{padding:10px 14px 4px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;flex-wrap:wrap;gap:4px}
-#header h1{font-size:22px;font-weight:700;background:linear-gradient(135deg,#f7c948,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-#mode-group,#rule-group{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:14px;padding:3px}
-.mode-btn,.rule-btn{padding:5px 14px;border:none;border-radius:11px;font-size:13px;font-weight:600;cursor:pointer;transition:all .25s;color:rgba(255,255,255,.5);background:transparent}
+#header{padding:8px 10px 4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;flex-wrap:wrap;gap:6px}
+#assist-btn{padding:5px 12px;border:none;border-radius:11px;font-size:12px;font-weight:600;cursor:pointer;transition:all .25s;color:rgba(255,255,255,.5);background:rgba(255,255,255,.08);white-space:nowrap;line-height:1.4}
+#assist-btn.active{background:#10b981;color:#fff;box-shadow:0 2px 8px rgba(16,185,129,.35)}
+#assist-btn .ab-indicator{display:inline-block;width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.15);margin-right:4px;vertical-align:middle;transition:background .25s}
+#assist-btn.active .ab-indicator{background:#fff;box-shadow:0 0 6px rgba(255,255,255,.4)}
+#bubble-layer.assist-on .mini-card .mc-result{font-size:28px;font-weight:800;line-height:1;letter-spacing:-.5px;flex:1;display:flex;align-items:center;justify-content:center}
+#bubble-layer.assist-off .mini-card .mc-result{font-size:36px;font-weight:800;line-height:1;flex:1;display:flex;align-items:center;justify-content:center}
+#mode-group,#rule-group{display:flex;gap:3px;background:rgba(255,255,255,.08);border-radius:12px;padding:3px}
+.mode-btn,.rule-btn{padding:4px 11px;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;transition:all .25s;color:rgba(255,255,255,.5);background:transparent}
 .mode-btn.active{background:#f59e0b;color:#1a1a2e;box-shadow:0 2px 8px rgba(245,158,11,.35)}
 .rule-btn.active{background:#818cf8;color:#1a1a2e;box-shadow:0 2px 8px rgba(129,140,248,.35)}
 #game-area{flex:1;position:relative;overflow:hidden;touch-action:none}
@@ -177,11 +182,11 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 
 <div id="app">
   <div id="header">
-    <h1>🃏 算24点</h1>
     <div id="mode-group">
       <button class="mode-btn active" data-mode="easy">简单</button>
       <button class="mode-btn" data-mode="normal">复杂</button>
     </div>
+    <button id="assist-btn"><span class="ab-indicator"></span>辅助思考</button>
     <div id="rule-group">
       <button class="rule-btn active" data-rule="int">整数</button>
       <button class="rule-btn" data-rule="frac">分数</button>
@@ -318,7 +323,7 @@ function simplifyFrac(num, den) {
 }
 
 // State
-let state = { mode:'easy', rule:'int', cards:[], history:[], initialPuzzle:null, draggedCard:null, dragOffsetX:0, dragOffsetY:0, startX:0, startY:0, startZIndex:'', targetCard:null, lockedCard:null, steps:0, gameOver:false, nextId:0 };
+let state = { mode:'easy', rule:'int', cards:[], history:[], initialPuzzle:null, draggedCard:null, dragOffsetX:0, dragOffsetY:0, startX:0, startY:0, startZIndex:'', targetCard:null, lockedCard:null, steps:0, gameOver:false, nextId:0, assistMode:false };
 const mergeParents = {};
 
 // Puzzle generation
@@ -468,13 +473,19 @@ function showBubbles(draggedId, targetId) {
   const parentRect = cardContainer.getBoundingClientRect();
   const pw = parentRect.width, ph = parentRect.height;
   const rowX = Math.max(2, Math.min(pw - totalW - 2, tx + (CARD_W - totalW) / 2)), rowY = Math.max(2, ty - mh - 8);
+  bubbleLayer.classList.toggle('assist-on', state.assistMode);
+  bubbleLayer.classList.toggle('assist-off', !state.assistMode);
   visualOrder.forEach((oi, i) => {
     const b = ops[oi]; if (!b) return;
     const mc = document.createElement('div');
     mc.className = 'mini-card mc-' + (b.op === '+' ? 'add' : b.op === '\u2212' ? 'sub' : b.op === '\u00d7' ? 'mul' : 'div');
     const opName = document.createElement('div'); opName.className = 'mc-opname'; opName.textContent = b.name; mc.appendChild(opName);
     const res = document.createElement('div'); res.className = 'mc-result';
-    res.textContent = (state.rule === 'frac' && b.frac) ? b.frac : getCardLabel(b.result);
+    if (state.assistMode) {
+      res.textContent = (state.rule === 'frac' && b.frac) ? b.frac : getCardLabel(b.result);
+    } else {
+      res.textContent = b.op;
+    }
     mc.appendChild(res);
     mc.style.left = (rowX + i * (mw + gap)) + 'px'; mc.style.top = rowY + 'px'; mc.style.opacity = '1';
     mc.dataset.targetId = targetId; mc.dataset.draggedId = draggedId; mc.dataset.op = b.op; mc.dataset.result = b.result;
@@ -707,6 +718,31 @@ function showToast(msg) { toast.textContent = msg; toast.classList.add('show'); 
 function init() {
   document.querySelectorAll('.mode-btn').forEach(btn => { btn.addEventListener('click', () => { document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); state.mode = btn.dataset.mode; newGame(); }); });
   document.querySelectorAll('.rule-btn').forEach(btn => { btn.addEventListener('click', () => { document.querySelectorAll('.rule-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); state.rule = btn.dataset.rule; newGame(); }); });
+  document.getElementById('assist-btn').addEventListener('click', () => {
+    const btn = document.getElementById('assist-btn');
+    state.assistMode = !state.assistMode;
+    btn.classList.toggle('active', state.assistMode);
+    const bl = document.getElementById('bubble-layer');
+    bl.classList.toggle('assist-on', state.assistMode);
+    bl.classList.toggle('assist-off', !state.assistMode);
+    const mcs = bl.querySelectorAll('.mini-card');
+    mcs.forEach(mc => {
+      const res = mc.querySelector('.mc-result');
+      const op = mc.dataset.op;
+      const result = mc.dataset.result;
+      const targetId = parseInt(mc.dataset.targetId);
+      const draggedId = parseInt(mc.dataset.draggedId);
+      if (state.assistMode) {
+        const pair = getBubblesForPair(draggedId, targetId);
+        const b = pair.find(p => p.op === op);
+        if (b) {
+          res.textContent = (state.rule === 'frac' && b.frac) ? b.frac : getCardLabel(b.result);
+        }
+      } else {
+        res.textContent = op;
+      }
+    });
+  });
   undoBtn.addEventListener('click', undo);
   document.getElementById('reset-btn').addEventListener('click', resetGame);
   newGameBtn.addEventListener('click', newGame);
