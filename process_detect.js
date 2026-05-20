@@ -109,41 +109,77 @@ async function supabaseDel(endpoint) {
 
 function buildPrompt(data) {
   const problems = data.problems || [];
-  // 计算概要统计数据
-  const allSolved = problems.every(p => p.solved);
-  const solvedItems = problems.filter(p => p.solved && p.time);
-  const avgTime = solvedItems.length > 0 ? Math.round(solvedItems.reduce((s, p) => s + p.time, 0) / solvedItems.length) : 0;
-  const totalUndos = problems.reduce((s, p) => s + (p.undos || 0), 0);
-  const totalHints = problems.filter(p => p.hintUsed).length;
+  const eventLog = data.eventLog || [];
 
-  // 每道题摘要
-  const summaries = problems.map((p, idx) => {
-    const solved = !!p.solved;
-    const skipped = !!p.skipped;
-    const time = p.time || (skipped ? '跳' : '—');
-    const hint = p.hintUsed ? ' H' : '';
-    return `题${idx+1}: [${p.numbers.join(',')}] ${'★'.repeat(p.stars)} | ${skipped ? '跳' : (solved ? '✓' : '✗')} | ${time}秒 | 撤${p.undos||0}${hint}`;
-  }).join('\n');
+  // 按题拆分事件链
+  const problemChains = [];
+  let currentChain = [];
+  eventLog.forEach(e => {
+    if (e.type === 'problem_start') {
+      if (currentChain.length > 0) problemChains.push(currentChain);
+      currentChain = [e];
+    } else {
+      currentChain.push(e);
+    }
+  });
+  if (currentChain.length > 0) problemChains.push(currentChain);
 
-  const header = allSolved
-    ? `全对${problems.length}题，平均${avgTime}秒/题，撤销${totalUndos}次，提示${totalHints}次`
-    : `完成${solvedItems.length}/${problems.length}题，撤销${totalUndos}次，提示${totalHints}次`;
+  // 为每道题生成详细的决策链文本
+  const chainTexts = problemChains.map((chain, idx) => {
+    const p = problems[idx] || {};
+    const nums = (p.numbers || []).join(',');
+    const stars = '★'.repeat(p.stars || 1);
+    const status = p.skipped ? '跳过' : (p.solved ? '✓解出' : '✗未解');
 
-  const toneGuide = allSolved && avgTime < 15 && totalUndos === 0
-    ? '此人水平很高。评分85-100分之间，客观反映高水平。建议时称为"挑战方向"而非"训练"。'
-    : '评分0-100之间，客观反映实际水平。';
+    // 还原操作序列
+    const actions = chain.map(e => {
+      switch (e.type) {
+        case 'problem_start': return null;
+        case 'bubble_show': return `  查看[${e.a}❌${e.b}]`;
+        case 'bubble_dismiss': return `  放弃[${e.a}❌${e.b}]（停留${Math.round((e.dwellMs || 0)/1000)}秒）`;
+        case 'merge': return `  →合并 ${e.a}${e.op}${e.b}`;
+        case 'undo': return `  ↩撤销`;
+        case 'hint_used': return `  ❓使用提示`;
+        case 'problem_solved': return null;
+        case 'detect_end': return null;
+        case 'problem_skip': return null;
+        default: return null;
+      }
+    }).filter(a => a !== null);
 
-  return `你是一位教练。以下是某人在24点检测中的表现数据。
+    const actionText = actions.length > 0 ? actions.join('\n') : '  无操作';
+
+    // 统计用时
+    const startEvent = chain.find(e => e.type === 'problem_start');
+    const endEvent = chain.find(e => e.type === 'problem_solved');
+    const skipEvent = chain.find(e => e.type === 'problem_skip');
+    const totalTime = endEvent && startEvent ? `用时${Math.round((endEvent.ts - startEvent.ts)/1000)}秒` :
+                       skipEvent && startEvent ? `坚持${Math.round((skipEvent.ts - startEvent.ts)/1000)}秒后放弃` :
+                       '用时?秒';
+
+    return `【题${idx+1}】[${nums}] ${stars} ${status} ${totalTime}\n${actionText}`;
+  }).join('\n\n');
+
+  // 统计概览
+  const solvedCount = problems.filter(p => p.solved).length;
+  const skippedCount = problems.filter(p => p.skipped).length;
+  const totalHint = eventLog.filter(e => e.type === 'hint_used').length;
+  const totalUndo = eventLog.filter(e => e.type === 'undo').length;
+  const totalDismiss = eventLog.filter(e => e.type === 'bubble_dismiss').length;
+
+  const header = `全${problems.length}题，解出${solvedCount}题，跳过${skippedCount}题，撤销${totalUndo}次，提示${totalHint}次，放弃查看${totalDismiss}次`;
+
+  return `以下是某人在24点检测中的完整决策数据：
 
 ${header}
 
-${summaries}
+${chainTexts}
 
 ## 要求
-分析5项基础能力，输出严格JSON格式：
+请基于完整的决策链数据，分析5项基础能力，输出严格JSON：
 
 {
-  "summary": "一句话总结，30字内。把数据翻译成结论，不要复述数字",
+  "summary": "一句话总结，30字内",
   "scores": {
     "数字敏感度": 0-100,
     "自动化程度": 0-100,
@@ -183,7 +219,7 @@ async function callDashScope(prompt) {
   const body = {
     model: 'qwen-plus',
     messages: [
-      { role: 'system', content: '你是一位24点游戏能力分析员。根据检测数据做客观分析，语言简洁中肯，适应被分析者的实际水平。' },
+      { role: 'system', content: '你是一位24点游戏能力分析员。根据决策链数据做客观分析，语言简洁中肯，适应被分析者的实际水平。对高水平者建议肯定其优势，不要提"不足"或"训练"。' },
       { role: 'user', content: prompt }
     ],
     temperature: 0.7,

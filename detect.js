@@ -73,23 +73,43 @@ function buildProblemMix() {
 const eventLog = [];
 function log(type, data) { eventLog.push({ ts: Date.now(), type, ...data }); }
 
+var _lastBubble = null; // { a, b, ts } when bubble is shown
+var _mergeInProgress = false; // flag to skip dismiss log after merge
+
 function installEventHooks() {
   if (window._hooksInstalled) return;
   window._hooksInstalled = true;
 
+  // bubble_show：记录显示的组合和时间
   const _showBubbles = window.showBubbles;
   window.showBubbles = function(a, b) {
     const dc = getCardState(a), tc = getCardState(b);
-    if (dc && tc) log('bubble_show', { a: dc.value, b: tc.value });
+    if (dc && tc) {
+      log('bubble_show', { a: dc.value, b: tc.value });
+      _lastBubble = { a: dc.value, b: tc.value, ts: Date.now() };
+    }
     _showBubbles(a, b);
   };
 
-  // hideBubbles 被渲染和重置时频繁调用，不记录日志避免噪声
+  // hideBubbles：记录放弃当前组合（排除 merge 后的自动清理）
+  const _hideBubbles = window.hideBubbles;
+  window.hideBubbles = function() {
+    if (_lastBubble && !_mergeInProgress && detect.active && detect.phase === 'playing') {
+      var dwell = Date.now() - _lastBubble.ts;
+      log('bubble_dismiss', { a: _lastBubble.a, b: _lastBubble.b, dwellMs: dwell });
+    }
+    _lastBubble = null;
+    _mergeInProgress = false;
+    _hideBubbles();
+  };
 
+  // merge：记录合并，清除 bubble 状态
   const _performMerge = window.performMerge;
   window.performMerge = function(a, b, op, result, label) {
     const dc = getCardState(a), tc = getCardState(b);
     log('merge', { op, a: dc ? dc.value : null, b: tc ? tc.value : null });
+    _lastBubble = null;
+    _mergeInProgress = true; // 接下来的 hideBubbles 由 merge 触发，不视为放弃
     _performMerge(a, b, op, result, label);
   };
 
@@ -99,7 +119,7 @@ function installEventHooks() {
     _undo();
   };
 
-  // 提示按钮 hook
+  // 提示按钮 hook：记录点击提示
   var hintBtn = document.getElementById('hint-btn');
   if (hintBtn && !hintBtn._detectHook) {
     hintBtn._detectHook = true;
@@ -177,6 +197,8 @@ function startProblem(i) {
   state.history = []; state.steps = 0; state.gameOver = false;
   state.mode = 'easy'; state.rule = 'int'; state.thinkMode = 'fast';
   state.draggedCard = null; state.targetCard = null; state.lockedCard = null;
+  _lastBubble = null;
+  _mergeInProgress = false;
   hideBubbles();
   const rect = cardContainer.getBoundingClientRect();
   const cw = rect.width || 340, ch = rect.height || 450;
@@ -582,24 +604,12 @@ function reportClose() {
 // ===================== AI 深度分析（异步） ===========================
 
 function triggerAIAnalysis() {
-  // 构造简化的分析数据
-  var problemEvents = splitEventsByProblem(eventLog);
+  // 发送完整事件链给 LLM
   var data = {
-    problems: detect.probs.map(function(p, i) {
-      var a = analyzeProblem(problemEvents[i] || []);
-      return {
-        numbers: p.numbers,
-        stars: p.stars,
-        solved: a.solved,
-        skipped: !!p.skipped,
-        time: a.totalTime,
-        undos: a.undoCount,
-        explores: a.exploreCount,
-        firstAction: a.firstActionTime,
-        hintUsed: problemEvents[i] && problemEvents[i].some(function(e) { return e.type === 'hint_used'; })
-      };
+    problems: detect.probs.map(function(p) {
+      return { numbers: p.numbers, stars: p.stars, solved: !!p.solved, skipped: !!p.skipped };
     }),
-    events: eventLog,
+    eventLog: eventLog.slice(), // 完整事件链
     time: Date.now()
   };
 
