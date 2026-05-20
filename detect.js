@@ -98,6 +98,20 @@ function installEventHooks() {
     log('undo', {});
     _undo();
   };
+
+  // 提示按钮 hook
+  var hintBtn = document.getElementById('hint-btn');
+  if (hintBtn && !hintBtn._detectHook) {
+    hintBtn._detectHook = true;
+    var _origHintClick = hintBtn.onclick;
+    hintBtn.onclick = function() {
+      if (detect.active && detect.phase === 'playing') {
+        log('hint_used', { problemIndex: detect.idx });
+      }
+      if (typeof _origHintClick === 'function') _origHintClick();
+      else hintBtn.click();
+    };
+  }
 }
 
 // ===================== 检测模式 ===========================
@@ -148,6 +162,11 @@ function updateProgress() {
   bar.querySelector('.dp-text').textContent = done + '/' + detect.probs.length;
 }
 
+function checkHintUsedDuringProblem() {
+  var hintModal = document.getElementById('hint-modal');
+  return hintModal && hintModal.style.display === 'flex';
+}
+
 function startProblem(i) {
   if (i >= detect.probs.length) { finishDetection(); return; }
   detect.idx = i;
@@ -170,6 +189,33 @@ function startProblem(i) {
   updateStatus();
   updateProgress();
   log('problem_start', { numbers: nums, stars: p.stars, index: i });
+  showSkipButton();
+}
+
+function showSkipButton() {
+  var btn = document.getElementById('detect-skip-btn');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'detect-skip-btn';
+    btn.textContent = '⏭ 跳过本题';
+    btn.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.08);color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 20px;font-size:13px;cursor:pointer;z-index:400;transition:all .3s';
+    btn.onmouseover = function(){btn.style.background='rgba(255,255,255,.12)';btn.style.color='rgba(255,255,255,.6)'};
+    btn.onmouseout = function(){btn.style.background='rgba(255,255,255,.08)';btn.style.color='rgba(255,255,255,.4)'};
+    btn.onclick = function(){
+      if (detect.phase !== 'playing') return;
+      log('problem_skip', {});
+      const p = detect.probs[detect.idx];
+      if (p) p.skipped = true;
+      startProblem(detect.idx + 1);
+    };
+    document.getElementById('app').appendChild(btn);
+  }
+  btn.style.display = 'block';
+}
+
+function hideSkipButton() {
+  var btn = document.getElementById('detect-skip-btn');
+  if (btn) btn.style.display = 'none';
 }
 
 function afterProblemSolved() {
@@ -201,6 +247,7 @@ function finishDetection() {
   detect.phase = 'report';
   const bar = document.getElementById('detect-progress');
   if (bar) bar.style.display = 'none';
+  hideSkipButton();
   log('detect_end', {});
   uploadDetectionData();
   try {
@@ -209,10 +256,12 @@ function finishDetection() {
     console.error('Report error:', e.message);
     showReport({
       solved: detect.probs.filter(p => p.solved).length,
-      total: detect.probs.length, avgTime: null, totalUndos: 0,
-      totalMerges: 0, totalExplores: 0, slowestIdx: -1, slowestTime: 0,
+      total: detect.probs.length, skipped: 0, unsolved: 0, allTimes: [],
+      totalUndos: 0, totalMerges: 0, totalExplores: 0, totalHints: 0,
+      fastCount: 0, mediumCount: 0, slowCount: 0,
+      slowestIdx: -1, slowestTime: 0,
       patterns: ['⚠️ 报告计算遇到错误，请重试'],
-      speedRank: '数据不足', speedEmoji: '⏳',
+      rank: '数据不足', emoji: '⏳',
       rawAnalysis: [], rawProblems: detect.probs, rawEvents: []
     });
   }
@@ -296,68 +345,113 @@ function computeReport() {
 
   const total = detect.probs.length;
   const solved = analysis.filter(a => a.solved).length;
+  const skipped = detect.probs.filter(p => p.skipped).length;
+  const unsolved = total - solved - skipped;
   const solvedItems = analysis.filter(a => a.solved);
-  const unsolvedItems = analysis.filter(a => !a.solved);
 
-  // 基础统计
-  const avgTime = solvedItems.length > 0
-    ? Math.round(solvedItems.reduce((s, a) => s + a.totalTime, 0) / solvedItems.length)
-    : null;
+  // 每题时间数组（不聚合）
+  const solvedTimes = solvedItems.map(a => a.totalTime).filter(t => t !== null);
+  const allTimes = analysis.map((a, i) => ({
+    index: i,
+    solved: a.solved,
+    skipped: detect.probs[i] && detect.probs[i].skipped,
+    time: a.totalTime,
+    undos: a.undoCount,
+    explores: a.exploreCount
+  }));
+
+  // 统计信息（不用平均数）
   const totalUndos = analysis.reduce((s, a) => s + a.undoCount, 0);
   const totalMerges = analysis.reduce((s, a) => s + a.mergeCount, 0);
   const totalExplores = analysis.reduce((s, a) => s + a.exploreCount, 0);
+  const hintEvents = ev.filter(function(e) { return e.type === 'hint_used'; });
+  const totalHints = hintEvents.length;
 
-  // 找最慢和最难的题
-  let slowestIdx = -1, slowestTime = 0;
-  let mostUndoIdx = -1, mostUndo = 0;
-  analysis.forEach((a, i) => {
-    if (a.solved && a.totalTime > slowestTime) { slowestTime = a.totalTime; slowestIdx = i; }
-    if (a.undoCount > mostUndo) { mostUndo = a.undoCount; mostUndoIdx = i; }
+  // 速度分布（代替平均值）
+  let fastCount = 0, mediumCount = 0, slowCount = 0;
+  solvedItems.forEach(function(a) {
+    if (!a.totalTime) return;
+    if (a.totalTime <= 10) fastCount++;
+    else if (a.totalTime <= 30) mediumCount++;
+    else slowCount++;
   });
 
-  // 识别观察到的模式
-  const patterns = [];
+  // 找出最慢题
+  let slowestIdx = -1, slowestTime = 0;
+  solvedItems.forEach(function(a, i) {
+    if (a.totalTime && a.totalTime > slowestTime) {
+      slowestTime = a.totalTime;
+      slowestIdx = analysis.indexOf(a);
+    }
+  });
 
-  // 模式1：沉思型（firstAction慢但全部解出）
-  const avgFirstTime = solvedItems.length > 0
-    ? solvedItems.reduce((s, a) => s + a.firstActionTime, 0) / solvedItems.length
-    : 0;
-  if (avgFirstTime > 5) patterns.push('🧠 偏好深思型：看牌后平均' + Math.round(avgFirstTime) + '秒才动手，倾向于在脑中算完再操作');
-  if (avgFirstTime < 2) patterns.push('⚡ 反应型选手：看牌后快速动手，边操作边探索');
+  // 段位评估（基于综合表现）
+  const isExpert = solved >= 7 && solvedTimes.every(function(t) { return t <= 25; }) && totalUndos <= 1;
+  const isSolid = solved >= 6 && solvedTimes.every(function(t) { return t <= 60; });
 
-  // 模式2：探索范围
-  const avgExplore = analysis.length > 0 ? totalExplores / analysis.length : 0;
-  if (avgExplore > 6) patterns.push('🔍 探索范围广：每题平均探索' + Math.round(avgExplore) + '种组合，尝试不同路径');
-  if (avgExplore < 3) patterns.push('🎯 目标明确：每题只探索少量组合，直奔解法');
+  let rank, emoji;
+  if (solved === total && isExpert) { rank = '⚡ 速算高手'; emoji = '⚡'; }
+  else if (solved === total && isSolid) { rank = '💪 稳健完成'; emoji = '💪'; }
+  else if (solved >= total - 1) { rank = '🌱 基本过关'; emoji = '🌱'; }
+  else if (skipped > 0 && solved > 0) { rank = '🔄 中途放弃'; emoji = '🔄'; }
+  else { rank = '📚 需要练习'; emoji = '📚'; }
 
-  // 模式3：退回频率
-  if (totalUndos === 0) patterns.push('✅ 零退回：整轮检测没撤销过操作，精度极高');
-  else if (totalUndos <= 2) patterns.push('👍 退回很少：偶尔调整，整体操作流畅');
-  else patterns.push('🔄 退回偏多：共撤销' + totalUndos + '次，可能需要加强计算准确性');
+  // 模式识别——简短、一条线
+  var patterns = [];
 
-  // 模式4：未解出题
-  const unsolvedCount = total - solved;
-  if (unsolvedCount > 0) {
-    const unsolvedStars = unsolvedItems.map((a, i) => detect.probs[analysis.indexOf(a)]).filter(Boolean);
-    const stars = unsolvedStars.map(p => '★'.repeat(p.stars)).join('、');
-    patterns.push('❌ 未解出' + unsolvedCount + '题（难度：' + stars + '），这些难点需要针对性练习');
+  // 反应速度（用中位数更稳健）
+  var firstTimes = solvedItems.map(function(a) { return a.firstActionTime; }).filter(function(t) { return t !== null; });
+  firstTimes.sort(function(a, b) { return a - b; });
+  var medianFirst = firstTimes.length > 0 ? firstTimes[Math.floor(firstTimes.length / 2)] : null;
+  if (medianFirst !== null) {
+    if (medianFirst <= 3) patterns.push('⚡ 反应迅速 · 见题即开始探索');
+    else if (medianFirst >= 8) patterns.push('🧠 深思熟虑 · 先想清楚再动手');
+    else patterns.push('⚖️ 快慢适中 · 边思考边验证');
   }
 
-  // 速度评级
-  let speedRank, speedEmoji;
-  if (avgTime === null) { speedRank = '数据不足'; speedEmoji = '⏳'; }
-  else if (avgTime < 5) { speedRank = '闪电速算'; speedEmoji = '⚡'; }
-  else if (avgTime < 10) { speedRank = '反应敏捷'; speedEmoji = '🔥'; }
-  else if (avgTime < 20) { speedRank = '稳健准确'; speedEmoji = '💪'; }
-  else if (avgTime < 35) { speedRank = '需要提速'; speedEmoji = '🐢'; }
-  else { speedRank = '练习不足'; speedEmoji = '🌱'; }
+  // 探索范围
+  var explores = analysis.map(function(a) { return a.exploreCount; });
+  var avgExp = explores.length > 0 ? explores.reduce(function(s, a) { return s + a; }, 0) / explores.length : 0;
+  if (avgExp > 5) patterns.push('🔍 广泛尝试 · 探索多种组合后找到解法');
+  else if (avgExp <= 3) patterns.push('🎯 直击目标 · 锁定正确组合快');
+  else patterns.push('🔎 适度探索 · 有方向地验证组合');
+
+  // 撤销
+  if (totalUndos === 0) patterns.push('✅ 零撤销 · 操作精准果断');
+  else if (totalUndos <= 2) patterns.push('👍 偶尔调整 · 发现错误及时纠正');
+  else patterns.push('🔄 频繁撤销 · 建议先想清楚再操作');
+
+  // 提示
+  if (totalHints === 0 && solved > 0) patterns.push('💡 独立解题 · 没使用提示');
+  else if (totalHints > 0) patterns.push('❓ 使用提示 ' + totalHints + '次 · 遇到困难时寻求了帮助');
+
+  // 跳过
+  if (skipped > 0) patterns.push('⏭ 跳过 ' + skipped + '题 · 卡住时选择了放弃');
+
+  // 未解出
+  if (unsolved > 0) {
+    var unsolvedStars = [];
+    for (var ui = 0; ui < detect.probs.length; ui++) {
+      var pa = analysis[ui];
+      if (pa && !pa.solved && !detect.probs[ui].skipped) {
+        unsolvedStars.push('★'.repeat(detect.probs[ui].stars));
+      }
+    }
+    patterns.push('❌ 未解出 ' + unsolved + '题（难度：' + (unsolvedStars.join('、') || '?') + '）');
+  }
+
+  // 限制最多显示5个
+  if (patterns.length > 5) patterns = patterns.slice(0, 5);
 
   return {
-    solved, total, avgTime, totalUndos, totalMerges, totalExplores,
-    slowestIdx, slowestTime,
-    patterns,
-    speedRank: speedRank + ' 平均每题' + (avgTime || '?') + '秒',
-    speedEmoji,
+    solved: solved, total: total, skipped: skipped, unsolved: unsolved,
+    allTimes: allTimes,
+    totalUndos: totalUndos, totalMerges: totalMerges,
+    totalExplores: totalExplores, totalHints: totalHints,
+    fastCount: fastCount, mediumCount: mediumCount, slowCount: slowCount,
+    slowestIdx: slowestIdx, slowestTime: slowestTime,
+    patterns: patterns,
+    rank: rank, emoji: emoji,
     rawAnalysis: analysis,
     rawProblems: detect.probs,
     rawEvents: ev
@@ -366,10 +460,13 @@ function computeReport() {
 
 function dummyReport() {
   return {
-    solved: 0, total: 8, avgTime: null, totalUndos: 0, totalMerges: 0, totalExplores: 0,
+    solved: 0, total: 8, skipped: 0, unsolved: 0,
+    allTimes: [],
+    totalUndos: 0, totalMerges: 0, totalExplores: 0, totalHints: 0,
+    fastCount: 0, mediumCount: 0, slowCount: 0,
     slowestIdx: -1, slowestTime: 0,
     patterns: ['⏳ 检测数据不足，请完成检测后再查看'],
-    speedRank: '数据不足', speedEmoji: '⏳',
+    rank: '数据不足', emoji: '⏳',
     rawAnalysis: [], rawProblems: [], rawEvents: []
   };
 }
@@ -391,29 +488,55 @@ function showReport(r) {
   if (!m) return;
   m.style.display = 'flex';
 
-  // 每道题的时间条
-  var problemBars = '';
-  if (r.rawProblems && r.rawAnalysis) {
+  // 每题时间分布（不聚合、不平均）
+  var gridRows = '';
+  if (r.allTimes && r.rawProblems) {
     for (var i = 0; i < r.rawProblems.length; i++) {
       var p = r.rawProblems[i];
-      var a = r.rawAnalysis[i] || {};
+      var at = r.allTimes[i] || {};
       var stars = renderStars(p.stars);
-      var solvedMark = a.solved ? '✅' : '❌';
-      var timeStr = a.totalTime ? a.totalTime + '秒' : '—';
-      var undoStr = a.undoCount > 0 ? ('  ↩' + a.undoCount) : '';
-      var maxTime = r.slowestTime > 0 ? r.slowestTime : 30;
-      var barW = a.totalTime ? Math.min(100, (a.totalTime / maxTime) * 100) : 0;
-      var barColor = a.solved ? (barW > 70 ? '#f59e0b' : '#10b981') : '#ef4444';
-      problemBars += '<div class="pb-row"><div class="pb-label">第' + (i+1) + '题 ' + stars + '</div><div class="pb-bar"><div class="pb-fill" style="width:' + barW + '%;background:' + barColor + '"></div></div><div class="pb-info">' + solvedMark + ' ' + timeStr + undoStr + '</div></div>';
+      var statusIcon = at.skipped ? '⏭' : (at.solved ? '✅' : '❌');
+      var timeStr = at.time ? at.time + '"': '—';
+      var undoStr = at.undos > 0 ? ' ↩' + at.undos : '';
+      var hintStr = '';
+      // 实际没为每题独立记录hint，但整体hint次数在下方显示
+      var maxTime = r.slowestTime > 15 ? r.slowestTime : 30;
+      var barW = at.time ? Math.min(100, Math.round(at.time / maxTime * 100)) : 0;
+      var barColor = at.skipped ? '#6b7280' : (at.solved ? (at.time <= 10 ? '#10b981' : at.time <= 30 ? '#f59e0b' : '#f97316') : '#ef4444');
+      gridRows += '<div class="pg-row"><div class="pg-num">' + (i+1) + '</div><div class="pg-stars">' + stars + '</div><div class="pg-bar"><div class="pg-fill" style="width:' + barW + '%;background:' + barColor + '"></div></div><div class="pg-time">' + timeStr + '</div><div class="pg-status">' + statusIcon + '</div><div class="pg-undo">' + undoStr + '</div></div>';
     }
   }
 
-  // 模式列表
-  var patternList = (r.patterns || []).map(function(p) {
+  // 速度分布标签（代替平均值）
+  var speedTags = '';
+  if (r.fastCount > 0) speedTags += '<span class="speed-tag fast">≤10秒 ' + r.fastCount + '题</span>';
+  if (r.mediumCount > 0) speedTags += '<span class="speed-tag medium">11-30秒 ' + r.mediumCount + '题</span>';
+  if (r.slowCount > 0) speedTags += '<span class="speed-tag slow">30秒+ ' + r.slowCount + '题</span>';
+  if (r.unsolved > 0) speedTags += '<span class="speed-tag unsolved">未解出 ' + r.unsolved + '题</span>';
+  if (r.skipped > 0) speedTags += '<span class="speed-tag skipped">跳过 ' + r.skipped + '题</span>';
+
+  // 模式列表（一行一个，简短）
+  var patternHtml = (r.patterns || []).map(function(p) {
     return '<div class="pat-item">' + p + '</div>';
   }).join('');
 
-  m.querySelector('.report-body').innerHTML = '<div class="report-header"><div class="report-rank">' + r.speedEmoji + ' ' + r.speedRank + '</div><div class="report-score">完成 ' + r.solved + '/' + r.total + ' 题</div></div><div class="report-stats"><span>⏱ 平均每题 ' + (r.avgTime || '?') + '秒</span><span>🔄 撤销 ' + r.totalUndos + '次</span></div><div class="report-section"><div class="sec-title">📋 每题表现</div>' + problemBars + '</div><div class="report-section"><div class="sec-title">🔍 行为模式分析</div>' + patternList + '</div><div class="report-section" id="ai-analysis-section" style="display:none"><div class="sec-title">🤖 AI 深度分析</div><div id="ai-analysis-content" class="ai-content"></div></div>';
+  // 底部统计行
+  var statsRow = '';
+  statsRow += '<div class="stat-item"><span class="stat-num">' + r.totalMerges + '</span><span class="stat-label">操作</span></div>';
+  statsRow += '<div class="stat-item"><span class="stat-num">' + r.totalUndos + '</span><span class="stat-label">撤销</span></div>';
+  statsRow += '<div class="stat-item"><span class="stat-num">' + r.totalHints + '</span><span class="stat-label">提示</span></div>';
+  statsRow += '<div class="stat-item"><span class="stat-num">' + r.totalExplores + '</span><span class="stat-label">探索</span></div>';
+
+  m.querySelector('.report-body').innerHTML =
+    '<div class="report-header"><div class="report-rank">' + r.rank + '</div><div class="report-score">' + r.solved + '/' + r.total + '</div></div>' +
+    '<div class="speed-tags">' + speedTags + '</div>' +
+    '<div class="report-section"><div class="sec-title">每题用时分布</div><div class="pg-grid">' + gridRows + '</div></div>' +
+    '<div class="report-section"><div class="sec-title">行为特征</div><div class="pat-list">' + patternHtml + '</div></div>' +
+    '<div class="stats-row">' + statsRow + '</div>' +
+    '<div class="report-section" id="ai-analysis-section" style="display:none">' +
+      '<div class="sec-title">AI 分析</div>' +
+      '<div id="ai-analysis-content" class="ai-content"></div>' +
+    '</div>';
 
   // 触发异步 AI 分析
   triggerAIAnalysis();
@@ -432,17 +555,20 @@ function reportClose() {
 
 function triggerAIAnalysis() {
   // 构造简化的分析数据
+  var problemEvents = splitEventsByProblem(eventLog);
   var data = {
     problems: detect.probs.map(function(p, i) {
-      var a = analyzeProblem(splitEventsByProblem(eventLog)[i] || []);
+      var a = analyzeProblem(problemEvents[i] || []);
       return {
         numbers: p.numbers,
         stars: p.stars,
         solved: a.solved,
+        skipped: !!p.skipped,
         time: a.totalTime,
         undos: a.undoCount,
         explores: a.exploreCount,
-        firstAction: a.firstActionTime
+        firstAction: a.firstActionTime,
+        hintUsed: problemEvents[i] && problemEvents[i].some(function(e) { return e.type === 'hint_used'; })
       };
     }),
     events: eventLog,

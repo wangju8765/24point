@@ -102,54 +102,61 @@ function buildPrompt(data) {
   const problems = data.problems || [];
   const events = data.events || [];
 
-  // 生成每道题的摘要
+  // 生成每道题的摘要（使用 already-computed summary in p）
   const summaries = problems.map((p, idx) => {
-    // 找到这道题的事件
-    const probEvents = [];
-    let inProb = false;
-    events.forEach(e => {
-      if (e.type === 'problem_start' && e.index === idx) { inProb = true; probEvents.push(e); }
-      else if (e.type === 'problem_start' && e.index !== idx) { inProb = false; }
-      else if (inProb) probEvents.push(e);
-    });
+    const solved = !!p.solved;
+    const skipped = !!p.skipped;
+    const time = p.time || '?';
+    const undos = p.undos || 0;
+    const explores = p.explores || 0;
+    const firstAction = p.firstAction || '?';
+    const hintUsed = !!p.hintUsed;
+    const stars = '★'.repeat(p.stars || 1);
+    const status = skipped ? '跳过' : (solved ? '解出' : '未解出');
+    const hintMark = hintUsed ? ' [用了提示]' : '';
+    return `题${idx+1}: [${p.numbers.join(',')}] ${stars} | ${status} | 用时${time}秒 | 撤销${undos}次 | 首次操作${firstAction}秒${hintMark}`;
+  }).join('\n');
 
-    const solved = probEvents.some(e => e.type === 'problem_solved');
-    const merges = probEvents.filter(e => e.type === 'merge');
-    const undos = probEvents.filter(e => e.type === 'undo');
-    const bubbles = probEvents.filter(e => e.type === 'bubble_show');
-    const startEvent = probEvents.find(e => e.type === 'problem_start');
-    const endEvent = probEvents.find(e => e.type === 'problem_solved');
-    const totalTime = solved && startEvent && endEvent ? ((endEvent.ts - startEvent.ts) / 1000).toFixed(1) : '?';
+  // 判断整体水平
+  const allSolved = problems.every(p => p.solved);
+  const allTimes = problems.filter(p => p.solved && p.time).map(p => p.time);
+  const allFast = allTimes.length > 0 && allTimes.every(t => t <= 30);
+  const allVeryFast = allTimes.length > 0 && allTimes.every(t => t <= 10);
+  const noUndos = problems.every(p => p.undos === 0);
+  const hasSkips = problems.some(p => !p.solved);
 
-    // 探索序列
-    const pairSeq = bubbles.map(b => `${b.a}❌${b.b}`).join(' → ');
+  const isExpert = allSolved && allVeryFast && noUndos;
+  const isAdvanced = allSolved && allFast && !isExpert;
+  const isStruggling = !allSolved || hasSkips;
 
-    return `题${idx+1}: [${p.numbers.join(',')}] ★${'★'.repeat(p.stars-1)}
-  解出: ${solved ? '是' : '否'} | 用时: ${totalTime}秒 | 合并: ${merges.length}次 | 撤销: ${undos.length}次
-  探索序列: ${pairSeq || '(无)'}`;
-  }).join('\n\n');
+  let toneInstruction;
+  if (isExpert) {
+    toneInstruction = '全部8题快速解出且零失误，属于高水平表现。分析重点：确认优势、给出更高阶挑战建议。最后给出简明建议时，应以"挑战更高难度"为主，不要说"需要加强"或"不足"。';
+  } else if (isAdvanced) {
+    toneInstruction = '整体表现良好，大部分题解出。分析重点：肯定优势同时指出可以提升的方向。建议部分要具体可执行。';
+  } else {
+    toneInstruction = '表现有提升空间。分析重点：客观描述当前水平，给出清晰具体的练习方向。语气要鼓励，建议要可操作。';
+  }
 
-  return `你是一位专业的数学认知分析师。以下是8岁孩子在24点游戏能力检测中的完整数据。
-
-## 游戏规则
-24点游戏：用4张牌的数字，通过加减乘除运算使结果等于24。
-能力检测包含8道题，难度从★到★★★★。
+  return `你是一位专业的24点游戏分析员。以下是一次8题能力检测的数据：
 
 ## 原始数据
 ${summaries}
 
 ## 分析要求
-请从以下角度给出分析（输出中文，用自然语言，200字以内）：
+${toneInstruction}
 
-1. **总体表现**：看了多少题，解出多少，整体速度如何
-2. **优势**：孩子做得好的地方（例如速度快、准确率高、有策略等）
-3. **待提升**：需要加强的方面（例如计算易出错、方法单一、缺乏策略等）
-4. **练习建议**：针对性地给出2-3条具体建议
+请用中文输出以下内容，每段30字以内，总共120字以内：
+
+1. 一句话总结总体表现（解出情况+速度概况）
+2. 一句话概括优势特点
+3. 一句话（如果是高手：说挑战方向；如果是新手：说待提升方向）
+4. 一句话建议
 
 注意：
-- 要基于真实数据说话，不要说空话
-- 用家长能听懂的语言，不要用学术术语
-- 语气要鼓励但实事求是，重点指出改进方向`;
+- 用中性称呼，不要说"孩子"
+- 语言简洁有力，每句话单独成行
+- 对高水平者不要用"需要提升""不足""练"等词`;
 }
 
 async function callDashScope(prompt) {
@@ -158,7 +165,7 @@ async function callDashScope(prompt) {
   const body = {
     model: 'qwen-plus',
     messages: [
-      { role: 'system', content: '你是一位专业的数学认知分析师，专门分析儿童计算能力。请基于给出的数据做客观分析，用家长能懂的语言输出。' },
+      { role: 'system', content: '你是一位24点游戏能力分析员。根据检测数据做客观分析，语言简洁中肯，适应被分析者的实际水平。' },
       { role: 'user', content: prompt }
     ],
     temperature: 0.7,
