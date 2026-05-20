@@ -696,7 +696,7 @@ function renderAIResult(text) {
 
   // 雷达图
   var dims = Object.keys(data.scores || {});
-  var canvas = '<canvas id="radar-canvas" width="240" height="200"></canvas>';
+  var canvas = '<canvas id="radar-canvas" style="width:220px;height:180px"></canvas>';
 
   // 总结
   var html = '<div class="ai-summary">' + (data.summary || '') + '</div>';
@@ -750,9 +750,14 @@ function stripEvidence(t) {
 function drawRadarChart(scores) {
   var canvas = document.getElementById('radar-canvas');
   if (!canvas) return;
+  var dpr = window.devicePixelRatio || 1;
+  var rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
   var ctx = canvas.getContext('2d');
-  var W = canvas.width, H = canvas.height;
-  var cx = W/2, cy = H/2 + 8, R = 72;
+  ctx.scale(dpr, dpr);
+  var W = rect.width, H = rect.height;
+  var cx = W/2, cy = H/2 + 5, R = 68;
 
   var dims = Object.keys(scores || {});
   if (dims.length < 3) return;
