@@ -131,20 +131,28 @@ function buildPrompt(data) {
     const stars = '★'.repeat(p.stars || 1);
     const status = p.skipped ? '跳过' : (p.solved ? '✓解出' : '✗未解');
 
-    // 还原操作序列
+    // 还原操作序列（含毫秒级时间间隔）
+    const startTs = chain[0].ts;
+    let prevTs = startTs;
     const actions = chain.map(e => {
+      if (e.type === 'problem_start' || e.type === 'detect_end' || e.type === 'problem_skip') return null;
+      const interval = e.ts - prevTs;
+      const elapsed = e.ts - startTs;
+      const elapsedStr = `${Math.floor(elapsed/1000)}.${(elapsed%1000+'').padStart(3,'0')}s`;
+      const intervalStr = interval >= 1000 ? `+${(interval/1000).toFixed(1)}s` : `+${interval}ms`;
+      prevTs = e.ts;
+
+      let action = '';
       switch (e.type) {
-        case 'problem_start': return null;
-        case 'bubble_show': return `  查看[${e.a}❌${e.b}]`;
-        case 'bubble_dismiss': return `  放弃[${e.a}❌${e.b}]（停留${Math.round((e.dwellMs || 0)/1000)}秒）`;
-        case 'merge': return `  →合并 ${e.a}${e.op}${e.b}`;
-        case 'undo': return `  ↩撤销`;
-        case 'hint_used': return `  ❓使用提示`;
-        case 'problem_solved': return null;
-        case 'detect_end': return null;
-        case 'problem_skip': return null;
+        case 'bubble_show': action = `查看[${e.a}❌${e.b}]`; break;
+        case 'bubble_dismiss': action = `放弃[${e.a}❌${e.b}]看${Math.round((e.dwellMs||0)/1000)}s`; break;
+        case 'merge': action = `合并 ${e.a}${e.op}${e.b}`; break;
+        case 'undo': action = `撤销`; break;
+        case 'hint_used': action = `提示`; break;
+        case 'problem_solved': action = `✅解出(${e.steps}步)`; break;
         default: return null;
       }
+      return `  [${elapsedStr}] ${intervalStr.padEnd(8)} ${action}`;
     }).filter(a => a !== null);
 
     const actionText = actions.length > 0 ? actions.join('\n') : '  无操作';
@@ -169,7 +177,7 @@ function buildPrompt(data) {
 
   const header = `全${problems.length}题，解出${solvedCount}题，跳过${skippedCount}题，撤销${totalUndo}次，提示${totalHint}次，放弃查看${totalDismiss}次`;
 
-  return `以下是某人在24点检测中的完整决策数据：
+  return `以下是某人在24点检测中的完整决策数据（每步标注了耗时）：
 
 ${header}
 
@@ -210,7 +218,8 @@ ${chainTexts}
 - 得分很高（>85）时解释用肯定语气
 - 得分较低时解释指出方向但不否"不足"
 - 所有解释用人话，别用术语
-- 建议必须真人能做到，如"限时挑战""分数模式""专项练习"等`;
+- 建议必须真人能做到，如"限时挑战""分数模式""专项练习"等
+- **时间分析是最关键的信号**：长思考期(>2s)后闪电操作表明脑中规划好再动手（高手）；无思考期+慢操作表明边做边想（新手）；操作间隔一致性说明心理节奏稳定`;
 }
 
 async function callDashScope(prompt) {
