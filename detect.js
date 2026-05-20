@@ -452,7 +452,7 @@ function triggerAIAnalysis() {
   // 提交到 Supabase 等待处理
   var SU = 'https://pkxmsfyzcphzvuangrzs.supabase.co';
   var SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBreG1zZnl6Y3BoenZ1YW5ncnpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNDkxNzcsImV4cCI6MjA5NDYyNTE3N30.K1_niR4ZylqzbDPFnmTs5HRo2aEbObkGw3V9clM1czo';
-  var id = Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+  var id = Date.now();
 
   fetch(SU + '/rest/v1/feedback', {
     method: 'POST',
