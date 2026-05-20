@@ -100,63 +100,56 @@ async function supabaseDel(endpoint) {
 
 function buildPrompt(data) {
   const problems = data.problems || [];
-  const events = data.events || [];
+  // 计算概要统计数据
+  const allSolved = problems.every(p => p.solved);
+  const solvedItems = problems.filter(p => p.solved && p.time);
+  const avgTime = solvedItems.length > 0 ? Math.round(solvedItems.reduce((s, p) => s + p.time, 0) / solvedItems.length) : 0;
+  const totalUndos = problems.reduce((s, p) => s + (p.undos || 0), 0);
+  const totalHints = problems.filter(p => p.hintUsed).length;
 
-  // 生成每道题的摘要（使用 already-computed summary in p）
+  // 每道题摘要
   const summaries = problems.map((p, idx) => {
     const solved = !!p.solved;
     const skipped = !!p.skipped;
-    const time = p.time || '?';
-    const undos = p.undos || 0;
-    const explores = p.explores || 0;
-    const firstAction = p.firstAction || '?';
-    const hintUsed = !!p.hintUsed;
-    const stars = '★'.repeat(p.stars || 1);
-    const status = skipped ? '跳过' : (solved ? '解出' : '未解出');
-    const hintMark = hintUsed ? ' [用了提示]' : '';
-    return `题${idx+1}: [${p.numbers.join(',')}] ${stars} | ${status} | 用时${time}秒 | 撤销${undos}次 | 首次操作${firstAction}秒${hintMark}`;
+    const time = p.time || (skipped ? '跳' : '—');
+    const hint = p.hintUsed ? ' H' : '';
+    return `题${idx+1}: [${p.numbers.join(',')}] ${'★'.repeat(p.stars)} | ${skipped ? '跳' : (solved ? '✓' : '✗')} | ${time}秒 | 撤${p.undos||0}${hint}`;
   }).join('\n');
 
-  // 判断整体水平
-  const allSolved = problems.every(p => p.solved);
-  const allTimes = problems.filter(p => p.solved && p.time).map(p => p.time);
-  const allFast = allTimes.length > 0 && allTimes.every(t => t <= 30);
-  const allVeryFast = allTimes.length > 0 && allTimes.every(t => t <= 10);
-  const noUndos = problems.every(p => p.undos === 0);
-  const hasSkips = problems.some(p => !p.solved);
+  const header = allSolved
+    ? `全对${problems.length}题，平均${avgTime}秒/题，撤销${totalUndos}次，提示${totalHints}次`
+    : `完成${solvedItems.length}/${problems.length}题，撤销${totalUndos}次，提示${totalHints}次`;
 
-  const isExpert = allSolved && allVeryFast && noUndos;
-  const isAdvanced = allSolved && allFast && !isExpert;
-  const isStruggling = !allSolved || hasSkips;
+  const toneGuide = allSolved && avgTime < 15 && totalUndos === 0
+    ? '此人水平很高。分析要肯定其优势，建议挑战更高难度或限时模式。不要说"不足""需要练"。'
+    : '客观分析优势与待提升方向，建议要具体可执行。';
 
-  let toneInstruction;
-  if (isExpert) {
-    toneInstruction = '全部8题快速解出且零失误，属于高水平表现。分析重点：确认优势、给出更高阶挑战建议。最后给出简明建议时，应以"挑战更高难度"为主，不要说"需要加强"或"不足"。';
-  } else if (isAdvanced) {
-    toneInstruction = '整体表现良好，大部分题解出。分析重点：肯定优势同时指出可以提升的方向。建议部分要具体可执行。';
-  } else {
-    toneInstruction = '表现有提升空间。分析重点：客观描述当前水平，给出清晰具体的练习方向。语气要鼓励，建议要可操作。';
-  }
+  return `你是一位教练。以下是某人在24点检测中的表现数据。
 
-  return `你是一位专业的24点游戏分析员。以下是一次8题能力检测的数据：
+${header}
 
-## 原始数据
 ${summaries}
 
 ## 分析要求
-${toneInstruction}
+${toneGuide}
 
-请用中文输出以下内容，每段30字以内，总共120字以内：
+请输出以下内容：
 
-1. 一句话总结总体表现（解出情况+速度概况）
-2. 一句话概括优势特点
-3. 一句话（如果是高手：说挑战方向；如果是新手：说待提升方向）
-4. 一句话建议
+【总体】30字以内，把数据翻译成结论（如："9秒/题且零失误，说明基础运算非常熟练"），不要只复述数字
 
-注意：
-- 用中性称呼，不要说"孩子"
-- 语言简洁有力，每句话单独成行
-- 对高水平者不要用"需要提升""不足""练"等词`;
+【基础运算】20字内评估加减乘除的熟练程度（看用时和撤销）
+
+【数字组合】20字内评估对数字搭配的敏感度（看探索数量和首次操作时间）
+
+【策略运用】20字内评估遇到困难时的应对方式，只有能看出时再说，看不出就说"数据不足以判断"
+
+【建议】20字内，只写一句真人能做到的具体行动（如"练分数模式""计时挑战"，但不要说"预设框架""多路径推演"这种空话）
+
+规则：
+- 别复述数字，要解释数字的意义
+- 每句10-20字，不要说空话
+- 不确定的能力就别提，宁缺毋滥
+- 建议必须是日常能做的事`;
 }
 
 async function callDashScope(prompt) {

@@ -653,12 +653,10 @@ function pollAIResult(id) {
         try {
           var result = JSON.parse(records[0].text);
           if (result.requestId === id) {
-            // 匹配到我们的分析结果
-            content.innerHTML = '<div class="ai-text">' + result.analysis + '</div>';
-            if (result.suggestions) {
-              content.innerHTML += '<div class="ai-suggestions"><div class="sec-title" style="margin-top:12px;font-size:13px">💡 练习建议</div>' +
-                result.suggestions.map(function(s) { return '<div class="ai-suggestion">' + s + '</div>'; }).join('') + '</div>';
-            }
+            // 解析结构化输出
+            var analysisText = result.analysis || '';
+            var html = renderAIResult(analysisText);
+            content.innerHTML = html;
             return;
           }
         } catch(e) { console.log('Parse error:', e); }
@@ -668,4 +666,29 @@ function pollAIResult(id) {
   }
 
   check();
+}
+
+function renderAIResult(text) {
+  // 解析结构化段落： 【标题】内容
+  var sections = text.match(/【[^】]+】[^【]*/g);
+  if (!sections) {
+    return '<div class="ai-text">' + text.replace(/\n/g, '<br>') + '</div>';
+  }
+
+  var html = '';
+  for (var i = 0; i < sections.length; i++) {
+    var s = sections[i];
+    var titleMatch = s.match(/【([^】]+)】/);
+    var title = titleMatch ? titleMatch[1] : '';
+    var content = s.replace(/【[^】]+】/, '').trim();
+
+    if (title === '总体') {
+      html += '<div class="ai-summary">' + content + '</div>';
+    } else if (title === '建议') {
+      html += '<div class="ai-section"><div class="ai-sec-title">💡 建议</div><div class="ai-suggestion">' + content + '</div></div>';
+    } else {
+      html += '<div class="ai-section"><div class="ai-sec-title">' + title + '</div><div class="ai-sec-body">' + content + '</div></div>';
+    }
+  }
+  return html;
 }
