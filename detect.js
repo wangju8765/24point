@@ -407,8 +407,12 @@ function computeReport() {
   });
 
   // 段位评估（基于综合表现）
-  const isExpert = solved >= 7 && solvedTimes.every(function(t) { return t <= 25; }) && totalUndos <= 1;
-  const isSolid = solved >= 6 && solvedTimes.every(function(t) { return t <= 60; });
+  // 容忍1个长时outlier：至少6题≤30秒 或 中位数≤20秒
+  var fastCount_ = solvedTimes.filter(function(t) { return t <= 30; }).length;
+  var sortedTimes = solvedTimes.slice().sort(function(a,b){return a-b});
+  var medianTime = sortedTimes.length > 0 ? sortedTimes[Math.floor(sortedTimes.length/2)] : 999;
+  const isExpert = solved >= 7 && (fastCount_ >= 7 || medianTime <= 20) && totalUndos <= 1;
+  const isSolid = solved >= 6 && (fastCount_ >= 5 || medianTime <= 35);
 
   let rank, emoji;
   if (solved === total && isExpert) { rank = '⚡ 速算高手'; emoji = '⚡'; }
@@ -466,16 +470,16 @@ function computeReport() {
     typeDesc = '在操作中思考，边探索边调整方向';
   }
 
-  // 补充行为特征（纵向排列，带特征名）
+  // 补充行为特征（纵向排列，带emoji）
   var evidence = [];
-  if (totalUndos === 0) evidence.push(' 精确度 · 零撤销，操作一步到位');
-  else if (totalUndos <= 2) evidence.push(' 纠错力 · 偶尔调整，及时纠正');
-  else evidence.push(' 稳定性 · 撤销偏多，可先想清楚再动手');
+  if (totalUndos === 0) evidence.push('✅ 精确度 · 零撤销，操作一步到位');
+  else if (totalUndos <= 2) evidence.push('👍 纠错力 · 偶尔调整，及时纠正');
+  else evidence.push('🔄 稳定性 · 撤销偏多');
 
-  if (totalHints === 0 && solved > 0) evidence.push(' 独立性 · 全程独立解题，未使用提示');
-  else if (totalHints > 0) evidence.push(' 求助倾向 · 遇到了困难时使用了提示');
+  if (totalHints === 0 && solved > 0) evidence.push('💡 独立性 · 全程独立解题，未使用提示');
+  else if (totalHints > 0) evidence.push('❓ 求助倾向 · 遇到困难时使用了提示');
 
-  if (skipped > 0) evidence.push(' 持续性 · 卡住时选择跳过，放弃' + skipped + '题');
+  if (skipped > 0) evidence.push('⏭ 持续性 · 卡住时选择跳过，放弃' + skipped + '题');
   else if (unsolved > 0) {
     var usStars = [];
     for (var ui = 0; ui < detect.probs.length; ui++) {
@@ -484,12 +488,12 @@ function computeReport() {
         usStars.push('★'.repeat(detect.probs[ui].stars));
       }
     }
-    evidence.push(' 完成度 · 未解出' + unsolved + '题（难度：' + (usStars.join('、') || '') + '）');
+    evidence.push('❌ 完成度 · 未解出' + unsolved + '题（难度：' + (usStars.join('、') || '') + '）');
   }
 
   if (medianFirst !== null) {
-    var actionLabel = medianFirst <= 3 ? '反应速度 · 快速启动' : (medianFirst >= 8 ? '思考深度 · 深思后行动' : '节奏感 · 边想边做');
-    evidence.push(' ' + actionLabel);
+    var actionLabel = medianFirst <= 3 ? '⚡ 反应速度 · 快速启动' : (medianFirst >= 8 ? '🧠 思考深度 · 深思后行动' : '⚖️ 节奏感 · 边想边做');
+    evidence.push(actionLabel);
   }
 
   return {
@@ -581,8 +585,7 @@ function showReport(r) {
     '<div class="report-header"><div class="report-rank">' + r.rank + '</div><div class="report-score">' + r.solved + '/' + r.total + '</div></div>' +
     '<div class="speed-tags">' + speedTags + '</div>' +
     '<div class="report-section"><div class="sec-title">每题用时分布</div><div class="pg-grid">' + gridRows + '</div></div>' +
-    '<div class="report-section"><div class="sec-title">操作风格诊断</div>' + typeHtml + '<div class="ev-list">' + evidenceHtml + '</div></div>' +
-
+    '<div class="report-section"><div class="sec-title">计算风格</div>' + typeHtml + '<div class="ev-list">' + evidenceHtml + '</div></div>' +
     '<div class="report-section" id="ai-analysis-section" style="display:none">' +
       '<div class="sec-title">能力评估</div>' +
       '<div id="ai-analysis-content" class="ai-content"></div>' +
@@ -722,7 +725,7 @@ function renderAIResult(text) {
 
   // 建议
   if (data.advice) {
-    html += '<div class="ai-section" style="margin-top:8px"><div class="ai-sec-title">建议</div><div class="ai-suggestion">' + data.advice + '</div></div>';
+    html += '<div class="ai-section" style="margin-top:8px"><div class="ai-sec-title">💡 练习建议</div><div class="ai-suggestion">' + data.advice + '</div></div>';
   }
 
   // 延迟绘制雷达图
