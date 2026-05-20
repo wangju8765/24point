@@ -260,7 +260,8 @@ function finishDetection() {
       totalUndos: 0, totalMerges: 0, totalExplores: 0, totalHints: 0,
       fastCount: 0, mediumCount: 0, slowCount: 0,
       slowestIdx: -1, slowestTime: 0,
-      patterns: ['⚠️ 报告计算遇到错误，请重试'],
+      userType: '—', typeIcon: '', typeDesc: '',
+      evidence: ['⚠️ 报告计算遇到错误，请重试'],
       rank: '数据不足', emoji: '⏳',
       rawAnalysis: [], rawProblems: detect.probs, rawEvents: []
     });
@@ -396,52 +397,80 @@ function computeReport() {
   else if (skipped > 0 && solved > 0) { rank = '🔄 中途放弃'; emoji = '🔄'; }
   else { rank = '📚 需要练习'; emoji = '📚'; }
 
-  // 模式识别——简短、一条线
-  var patterns = [];
-
-  // 反应速度（用中位数更稳健）
+  // 用户类型判断
   var firstTimes = solvedItems.map(function(a) { return a.firstActionTime; }).filter(function(t) { return t !== null; });
   firstTimes.sort(function(a, b) { return a - b; });
   var medianFirst = firstTimes.length > 0 ? firstTimes[Math.floor(firstTimes.length / 2)] : null;
-  if (medianFirst !== null) {
-    if (medianFirst <= 3) patterns.push('⚡ 反应迅速 · 见题即开始探索');
-    else if (medianFirst >= 8) patterns.push('🧠 深思熟虑 · 先想清楚再动手');
-    else patterns.push('⚖️ 快慢适中 · 边思考边验证');
-  }
 
-  // 探索范围
   var explores = analysis.map(function(a) { return a.exploreCount; });
   var avgExp = explores.length > 0 ? explores.reduce(function(s, a) { return s + a; }, 0) / explores.length : 0;
-  if (avgExp > 5) patterns.push('🔍 广泛尝试 · 探索多种组合后找到解法');
-  else if (avgExp <= 3) patterns.push('🎯 直击目标 · 锁定正确组合快');
-  else patterns.push('🔎 适度探索 · 有方向地验证组合');
 
-  // 撤销
-  if (totalUndos === 0) patterns.push('✅ 零撤销 · 操作精准果断');
-  else if (totalUndos <= 2) patterns.push('👍 偶尔调整 · 发现错误及时纠正');
-  else patterns.push('🔄 频繁撤销 · 建议先想清楚再操作');
+  // 判断类型：基于中位首次操作时间 + 探索范围 + 撤销
+  var isThinker = medianFirst !== null && medianFirst >= 5 && avgExp <= 4;
+  var isReactor = medianFirst !== null && medianFirst <= 3;
+  var isSystematic = avgExp >= 5 && totalUndos <= 2;
+  var isRandom = avgExp >= 5 && totalUndos > 2;
+  var isPrecise = totalUndos === 0 && avgExp <= 4;
 
-  // 提示
-  if (totalHints === 0 && solved > 0) patterns.push('💡 独立解题 · 没使用提示');
-  else if (totalHints > 0) patterns.push('❓ 使用提示 ' + totalHints + '次 · 遇到困难时寻求了帮助');
+  var userType = '';
+  var typeIcon = '';
+  var typeDesc = '';
 
-  // 跳过
-  if (skipped > 0) patterns.push('⏭ 跳过 ' + skipped + '题 · 卡住时选择了放弃');
-
-  // 未解出
-  if (unsolved > 0) {
-    var unsolvedStars = [];
-    for (var ui = 0; ui < detect.probs.length; ui++) {
-      var pa = analysis[ui];
-      if (pa && !pa.solved && !detect.probs[ui].skipped) {
-        unsolvedStars.push('★'.repeat(detect.probs[ui].stars));
-      }
-    }
-    patterns.push('❌ 未解出 ' + unsolved + '题（难度：' + (unsolvedStars.join('、') || '?') + '）');
+  if (isThinker) {
+    userType = '冷静思考型';
+    typeIcon = '🧊';
+    typeDesc = '先想清楚再动手，操作精炼准确';
+  } else if (isReactor && isPrecise) {
+    userType = '直觉型';
+    typeIcon = '⚡';
+    typeDesc = '凭直觉快速锁定正确方向，操作快准稳';
+  } else if (isReactor && !isPrecise) {
+    userType = '快速反应型';
+    typeIcon = '🔥';
+    typeDesc = '快速动手边做边调整，行动力强';
+  } else if (isSystematic) {
+    userType = '系统探索型';
+    typeIcon = '🔍';
+    typeDesc = '有条不紊地尝试各种组合，覆盖面广';
+  } else if (isRandom) {
+    userType = '随机尝试型';
+    typeIcon = '🎲';
+    typeDesc = '四处尝试但方向不够明确，建议先想策略';
+  } else if (isPrecise) {
+    userType = '精准操作型';
+    typeIcon = '🎯';
+    typeDesc = '目标清晰，精准执行，极少误操作';
+  } else {
+    userType = '边做边想型';
+    typeIcon = '🔀';
+    typeDesc = '在操作中思考，边探索边调整方向';
   }
 
-  // 限制最多显示5个
-  if (patterns.length > 5) patterns = patterns.slice(0, 5);
+  // 补充行为特征（最多3条简短证据）
+  var evidence = [];
+  if (totalUndos === 0) evidence.push('✅ 零撤销 · 操作精准');
+  else if (totalUndos <= 2) evidence.push('👍 偶尔调整 · 发现错误能纠正');
+  else evidence.push('🔄 撤销' + totalUndos + '次 · 建议想清楚再操作');
+
+  if (totalHints === 0 && solved > 0) evidence.push('💡 独立解题 · 未用提示');
+  else if (totalHints > 0) evidence.push('❓ 使用提示' + totalHints + '次');
+
+  if (skipped > 0) evidence.push('⏭ 跳过' + skipped + '题 · 卡住时放弃');
+  else if (unsolved > 0) {
+    var usStars = [];
+    for (var ui = 0; ui < detect.probs.length; ui++) {
+      var pa2 = analysis[ui];
+      if (pa2 && !pa2.solved && !detect.probs[ui].skipped) {
+        usStars.push('★'.repeat(detect.probs[ui].stars));
+      }
+    }
+    evidence.push('❌ 未解出' + unsolved + '题（' + (usStars.join('、') || '') + '）');
+  }
+
+  // 保留中位首次操作时间和平均探索数作为辅助说明
+  if (medianFirst !== null) {
+    evidence.push('⏱ 平均' + medianFirst + '秒开始操作');
+  }
 
   return {
     solved: solved, total: total, skipped: skipped, unsolved: unsolved,
@@ -450,7 +479,8 @@ function computeReport() {
     totalExplores: totalExplores, totalHints: totalHints,
     fastCount: fastCount, mediumCount: mediumCount, slowCount: slowCount,
     slowestIdx: slowestIdx, slowestTime: slowestTime,
-    patterns: patterns,
+    userType: userType, typeIcon: typeIcon, typeDesc: typeDesc,
+    evidence: evidence,
     rank: rank, emoji: emoji,
     rawAnalysis: analysis,
     rawProblems: detect.probs,
@@ -465,7 +495,8 @@ function dummyReport() {
     totalUndos: 0, totalMerges: 0, totalExplores: 0, totalHints: 0,
     fastCount: 0, mediumCount: 0, slowCount: 0,
     slowestIdx: -1, slowestTime: 0,
-    patterns: ['⏳ 检测数据不足，请完成检测后再查看'],
+    userType: '—', typeIcon: '', typeDesc: '',
+    evidence: ['⏳ 检测数据不足，请完成检测后再查看'],
     rank: '数据不足', emoji: '⏳',
     rawAnalysis: [], rawProblems: [], rawEvents: []
   };
@@ -515,9 +546,10 @@ function showReport(r) {
   if (r.unsolved > 0) speedTags += '<span class="speed-tag unsolved">未解出 ' + r.unsolved + '题</span>';
   if (r.skipped > 0) speedTags += '<span class="speed-tag skipped">跳过 ' + r.skipped + '题</span>';
 
-  // 模式列表（一行一个，简短）
-  var patternHtml = (r.patterns || []).map(function(p) {
-    return '<div class="pat-item">' + p + '</div>';
+  // 用户类型 + 行为证据
+  var typeHtml = '<div class="user-type"><span class="type-icon">' + (r.typeIcon || '') + '</span><span class="type-name">' + (r.userType || '') + '</span><span class="type-desc">' + (r.typeDesc || '') + '</span></div>';
+  var evidenceHtml = (r.evidence || []).map(function(e) {
+    return '<div class="ev-item">' + e + '</div>';
   }).join('');
 
   // 底部统计行
@@ -531,7 +563,7 @@ function showReport(r) {
     '<div class="report-header"><div class="report-rank">' + r.rank + '</div><div class="report-score">' + r.solved + '/' + r.total + '</div></div>' +
     '<div class="speed-tags">' + speedTags + '</div>' +
     '<div class="report-section"><div class="sec-title">每题用时分布</div><div class="pg-grid">' + gridRows + '</div></div>' +
-    '<div class="report-section"><div class="sec-title">行为特征</div><div class="pat-list">' + patternHtml + '</div></div>' +
+    '<div class="report-section"><div class="sec-title">行为特征</div>' + typeHtml + '<div class="ev-list">' + evidenceHtml + '</div></div>' +
     '<div class="stats-row">' + statsRow + '</div>' +
     '<div class="report-section" id="ai-analysis-section" style="display:none">' +
       '<div class="sec-title">AI 分析</div>' +
