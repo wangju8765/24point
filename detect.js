@@ -444,16 +444,16 @@ function computeReport() {
     typeDesc = '在操作中思考，边探索边调整方向';
   }
 
-  // 补充行为特征（最多3条简短证据）
+  // 补充行为特征（纵向排列，带特征名）
   var evidence = [];
-  if (totalUndos === 0) evidence.push('✅ 零撤销 · 操作精准');
-  else if (totalUndos <= 2) evidence.push('👍 偶尔调整 · 发现错误能纠正');
-  else evidence.push('🔄 撤销' + totalUndos + '次 · 建议想清楚再操作');
+  if (totalUndos === 0) evidence.push(' 精确度 · 零撤销，操作一步到位');
+  else if (totalUndos <= 2) evidence.push(' 纠错力 · 偶尔调整，及时纠正');
+  else evidence.push(' 稳定性 · 撤销偏多，可先想清楚再动手');
 
-  if (totalHints === 0 && solved > 0) evidence.push('💡 独立解题 · 未用提示');
-  else if (totalHints > 0) evidence.push('❓ 使用提示' + totalHints + '次');
+  if (totalHints === 0 && solved > 0) evidence.push(' 独立性 · 全程独立解题，未使用提示');
+  else if (totalHints > 0) evidence.push(' 求助倾向 · 遇到了困难时使用了提示');
 
-  if (skipped > 0) evidence.push('⏭ 跳过' + skipped + '题 · 卡住时放弃');
+  if (skipped > 0) evidence.push(' 持续性 · 卡住时选择跳过，放弃' + skipped + '题');
   else if (unsolved > 0) {
     var usStars = [];
     for (var ui = 0; ui < detect.probs.length; ui++) {
@@ -462,12 +462,12 @@ function computeReport() {
         usStars.push('★'.repeat(detect.probs[ui].stars));
       }
     }
-    evidence.push('❌ 未解出' + unsolved + '题（' + (usStars.join('、') || '') + '）');
+    evidence.push(' 完成度 · 未解出' + unsolved + '题（难度：' + (usStars.join('、') || '') + '）');
   }
 
-  // 保留中位首次操作时间和平均探索数作为辅助说明
   if (medianFirst !== null) {
-    evidence.push('⏱ 平均' + medianFirst + '秒开始操作');
+    var actionLabel = medianFirst <= 3 ? '反应速度 · 快速启动' : (medianFirst >= 8 ? '思考深度 · 深思后行动' : '节奏感 · 边想边做');
+    evidence.push(' ' + actionLabel);
   }
 
   return {
@@ -552,28 +552,17 @@ function showReport(r) {
 
   // 底部统计行（含派生指标）
   var mergeExploreRatio = r.totalExplores > 0 ? (r.totalMerges / r.totalExplores).toFixed(1) : '—';
-  var ratioNote = '';
-  if (mergeExploreRatio !== '—') {
-    var mr = parseFloat(mergeExploreRatio);
-    if (mr <= 1.2) ratioNote = '每次探索即执行';
-    else if (mr <= 2.0) ratioNote = '探索后较快执行';
-    else ratioNote = '反复尝试同组合';
-  }
-  var statsRow = '';
-  statsRow += '<div class="stat-item"><span class="stat-num">' + r.totalMerges + '</span><span class="stat-label">操作</span></div>';
-  statsRow += '<div class="stat-item"><span class="stat-num">' + r.totalUndos + '</span><span class="stat-label">撤销</span></div>';
-  statsRow += '<div class="stat-item"><span class="stat-num">' + r.totalHints + '</span><span class="stat-label">提示</span></div>';
-  statsRow += '<div class="stat-item"><span class="stat-num">' + r.totalExplores + '</span><span class="stat-label">探索</span></div>';
-  statsRow += '<div class="stat-item"><span class="stat-num">' + mergeExploreRatio + '</span><span class="stat-label">操/探 <span style="font-size:10px;color:rgba(255,255,255,.25)">' + ratioNote + '</span></span></div>';
+  // 操作/探索比仅用于内部类型判断
+  var mergeExploreRatio = r.totalExplores > 0 ? (r.totalMerges / r.totalExplores).toFixed(1) : '—';
 
   m.querySelector('.report-body').innerHTML =
     '<div class="report-header"><div class="report-rank">' + r.rank + '</div><div class="report-score">' + r.solved + '/' + r.total + '</div></div>' +
     '<div class="speed-tags">' + speedTags + '</div>' +
     '<div class="report-section"><div class="sec-title">每题用时分布</div><div class="pg-grid">' + gridRows + '</div></div>' +
-    '<div class="report-section"><div class="sec-title">行为特征</div>' + typeHtml + '<div class="ev-list">' + evidenceHtml + '</div></div>' +
-    '<div class="stats-row">' + statsRow + '</div>' +
+    '<div class="report-section"><div class="sec-title">操作风格诊断</div>' + typeHtml + '<div class="ev-list">' + evidenceHtml + '</div></div>' +
+
     '<div class="report-section" id="ai-analysis-section" style="display:none">' +
-      '<div class="sec-title">AI 分析</div>' +
+      '<div class="sec-title">能力评估</div>' +
       '<div id="ai-analysis-content" class="ai-content"></div>' +
     '</div>';
 
@@ -637,7 +626,7 @@ function pollAIResult(id) {
   var content = document.getElementById('ai-analysis-content');
   if (!section || !content) return;
 
-  content.innerHTML = '<div class="ai-loading">🤔 正在分析你的计算模式…</div>';
+  content.innerHTML = '<div class="ai-loading">🤔 正在评估各项能力…</div>';
   section.style.display = 'block';
 
   var maxAttempts = 30;
@@ -716,14 +705,14 @@ function renderAIResult(text) {
         '<span class="ai-dim-score">' + val + '</span>' +
       '</div>' +
       '<div class="ai-dim-bar"><div class="ai-dim-fill" style="width:' + val + '%;background:' + htmlColor + '"></div></div>' +
-      '<div class="ai-dim-desc">' + interpretations[key] + '</div>' +
+      '<div class="ai-dim-desc">' + stripEvidence(interpretations[key]) + '</div>' +
     '</div>';
     idx++;
   }
 
   // 建议
   if (data.advice) {
-    html += '<div class="ai-section" style="margin-top:8px"><div class="ai-sec-title">💡 建议</div><div class="ai-suggestion">' + data.advice + '</div></div>';
+    html += '<div class="ai-section" style="margin-top:8px"><div class="ai-sec-title">建议</div><div class="ai-suggestion">' + data.advice + '</div></div>';
   }
 
   // 延迟绘制雷达图
@@ -734,12 +723,23 @@ function renderAIResult(text) {
   return html;
 }
 
+// 去掉解释中的证据前缀，只保留结论
+function stripEvidence(t) {
+  // 常见模式："简单题2-4秒内完成，说明核心运算已形成直觉" → "核心运算已形成直觉"
+  var idx = t.indexOf('说明');
+  if (idx >= 0) return t.substring(idx + 2).trim();
+  // "如...，说明..."
+  var idx2 = t.indexOf('，说明');
+  if (idx2 >= 0) return t.substring(idx2 + 3).trim();
+  return t;
+}
+
 function drawRadarChart(scores) {
   var canvas = document.getElementById('radar-canvas');
   if (!canvas) return;
   var ctx = canvas.getContext('2d');
   var W = canvas.width, H = canvas.height;
-  var cx = W/2, cy = H/2 - 8, R = 80;
+  var cx = W/2, cy = H/2 + 8, R = 72;
 
   var dims = Object.keys(scores || {});
   if (dims.length < 3) return;
