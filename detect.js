@@ -189,33 +189,31 @@ function startProblem(i) {
   updateStatus();
   updateProgress();
   log('problem_start', { numbers: nums, stars: p.stars, index: i });
-  showSkipButton();
+  toggleSkipButton(true);
 }
 
-function showSkipButton() {
-  var btn = document.getElementById('detect-skip-btn');
-  if (!btn) {
-    btn = document.createElement('button');
-    btn.id = 'detect-skip-btn';
-    btn.textContent = '⏭ 跳过本题';
-    btn.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.08);color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 20px;font-size:13px;cursor:pointer;z-index:400;transition:all .3s';
-    btn.onmouseover = function(){btn.style.background='rgba(255,255,255,.12)';btn.style.color='rgba(255,255,255,.6)'};
-    btn.onmouseout = function(){btn.style.background='rgba(255,255,255,.08)';btn.style.color='rgba(255,255,255,.4)'};
-    btn.onclick = function(){
+function toggleSkipButton(show) {
+  var controls = document.getElementById('controls');
+  if (!controls) return;
+  var skipBtn = document.getElementById('detect-skip-btn');
+  var newBtn = document.getElementById('new-game-btn');
+  if (!skipBtn) {
+    skipBtn = document.createElement('button');
+    skipBtn.id = 'detect-skip-btn';
+    skipBtn.textContent = '⏭ 跳过';
+    skipBtn.className = 'btn-skip';
+    skipBtn.onclick = function(){
       if (detect.phase !== 'playing') return;
       log('problem_skip', {});
       const p = detect.probs[detect.idx];
       if (p) p.skipped = true;
       startProblem(detect.idx + 1);
     };
-    document.getElementById('app').appendChild(btn);
+    controls.appendChild(skipBtn);
   }
-  btn.style.display = 'block';
-}
-
-function hideSkipButton() {
-  var btn = document.getElementById('detect-skip-btn');
-  if (btn) btn.style.display = 'none';
+  // 检测模式：显示skip，隐藏新题
+  skipBtn.style.display = show ? 'inline-flex' : 'none';
+  if (newBtn) newBtn.style.display = show ? 'none' : 'inline-flex';
 }
 
 function afterProblemSolved() {
@@ -247,7 +245,7 @@ function finishDetection() {
   detect.phase = 'report';
   const bar = document.getElementById('detect-progress');
   if (bar) bar.style.display = 'none';
-  hideSkipButton();
+  toggleSkipButton(false);
   log('detect_end', {});
   uploadDetectionData();
   try {
@@ -552,12 +550,21 @@ function showReport(r) {
     return '<div class="ev-item">' + e + '</div>';
   }).join('');
 
-  // 底部统计行
+  // 底部统计行（含派生指标）
+  var mergeExploreRatio = r.totalExplores > 0 ? (r.totalMerges / r.totalExplores).toFixed(1) : '—';
+  var ratioNote = '';
+  if (mergeExploreRatio !== '—') {
+    var mr = parseFloat(mergeExploreRatio);
+    if (mr <= 1.2) ratioNote = '每次探索即执行';
+    else if (mr <= 2.0) ratioNote = '探索后较快执行';
+    else ratioNote = '反复尝试同组合';
+  }
   var statsRow = '';
   statsRow += '<div class="stat-item"><span class="stat-num">' + r.totalMerges + '</span><span class="stat-label">操作</span></div>';
   statsRow += '<div class="stat-item"><span class="stat-num">' + r.totalUndos + '</span><span class="stat-label">撤销</span></div>';
   statsRow += '<div class="stat-item"><span class="stat-num">' + r.totalHints + '</span><span class="stat-label">提示</span></div>';
   statsRow += '<div class="stat-item"><span class="stat-num">' + r.totalExplores + '</span><span class="stat-label">探索</span></div>';
+  statsRow += '<div class="stat-item"><span class="stat-num">' + mergeExploreRatio + '</span><span class="stat-label">操/探 <span style="font-size:10px;color:rgba(255,255,255,.25)">' + ratioNote + '</span></span></div>';
 
   m.querySelector('.report-body').innerHTML =
     '<div class="report-header"><div class="report-rank">' + r.rank + '</div><div class="report-score">' + r.solved + '/' + r.total + '</div></div>' +
@@ -669,26 +676,134 @@ function pollAIResult(id) {
 }
 
 function renderAIResult(text) {
-  // 解析结构化段落： 【标题】内容
-  var sections = text.match(/【[^】]+】[^【]*/g);
-  if (!sections) {
-    return '<div class="ai-text">' + text.replace(/\n/g, '<br>') + '</div>';
+  // 尝试解析JSON
+  var data = null;
+  if (typeof text === 'object' && text !== null) {
+    data = text;
+  } else if (typeof text === 'string') {
+    try {
+      var p = JSON.parse(text);
+      if (p.scores && p.interpretations) data = p;
+    } catch(e) {}
   }
 
-  var html = '';
-  for (var i = 0; i < sections.length; i++) {
-    var s = sections[i];
-    var titleMatch = s.match(/【([^】]+)】/);
-    var title = titleMatch ? titleMatch[1] : '';
-    var content = s.replace(/【[^】]+】/, '').trim();
-
-    if (title === '总体') {
-      html += '<div class="ai-summary">' + content + '</div>';
-    } else if (title === '建议') {
-      html += '<div class="ai-section"><div class="ai-sec-title">💡 建议</div><div class="ai-suggestion">' + content + '</div></div>';
-    } else {
-      html += '<div class="ai-section"><div class="ai-sec-title">' + title + '</div><div class="ai-sec-body">' + content + '</div></div>';
-    }
+  if (!data) {
+    // 旧格式fallback
+    return '<div class="ai-text">' + String(text).replace(/\n/g, '<br>') + '</div>';
   }
+
+  // 雷达图
+  var dims = Object.keys(data.scores || {});
+  var canvas = '<canvas id="radar-canvas" width="240" height="200"></canvas>';
+
+  // 总结
+  var html = '<div class="ai-summary">' + (data.summary || '') + '</div>';
+  html += '<div style="text-align:center">' + canvas + '</div>';
+
+  // 维度解读
+  var interpretations = data.interpretations || {};
+  var dimColors = ['#f59e0b','#10b981','#f472b6','#818cf8','#a78bfa'];
+  var dimIcons = ['🧮','⚡','🎯','🧠','🤔'];
+  var idx = 0;
+  for (var key in interpretations) {
+    var val = data.scores[key] || 50;
+    var icon = dimIcons[idx] || '';
+    var htmlColor = dimColors[idx] || '#888';
+    html += '<div class="ai-dim-row">' +
+      '<div class="ai-dim-header">' +
+        '<span class="ai-dim-icon">' + icon + '</span>' +
+        '<span class="ai-dim-name">' + key + '</span>' +
+        '<span class="ai-dim-score">' + val + '</span>' +
+      '</div>' +
+      '<div class="ai-dim-bar"><div class="ai-dim-fill" style="width:' + val + '%;background:' + htmlColor + '"></div></div>' +
+      '<div class="ai-dim-desc">' + interpretations[key] + '</div>' +
+    '</div>';
+    idx++;
+  }
+
+  // 建议
+  if (data.advice) {
+    html += '<div class="ai-section" style="margin-top:8px"><div class="ai-sec-title">💡 建议</div><div class="ai-suggestion">' + data.advice + '</div></div>';
+  }
+
+  // 延迟绘制雷达图
+  setTimeout(function() {
+    drawRadarChart(data.scores);
+  }, 100);
+
   return html;
+}
+
+function drawRadarChart(scores) {
+  var canvas = document.getElementById('radar-canvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  var cx = W/2, cy = H/2 - 8, R = 80;
+
+  var dims = Object.keys(scores || {});
+  if (dims.length < 3) return;
+
+  var n = dims.length;
+  ctx.clearRect(0, 0, W, H);
+
+  // 网格（3层）
+  var gridColors = ['rgba(255,255,255,.03)','rgba(255,255,255,.05)','rgba(255,255,255,.08)'];
+  for (var g = 0; g < 3; g++) {
+    var r = R * (g + 1) / 3;
+    ctx.beginPath();
+    for (var i = 0; i <= n; i++) {
+      var angle = -Math.PI/2 + 2*Math.PI*i/n;
+      var x = cx + r * Math.cos(angle);
+      var y = cy + r * Math.sin(angle);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(255,255,255,.08)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // 轴线
+  for (var i = 0; i < n; i++) {
+    var angle = -Math.PI/2 + 2*Math.PI*i/n;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + R * Math.cos(angle), cy + R * Math.sin(angle));
+    ctx.strokeStyle = 'rgba(255,255,255,.05)';
+    ctx.stroke();
+  }
+
+  // 评分多边形
+  ctx.beginPath();
+  var dimColors = ['#f59e0b','#10b981','#f472b6','#818cf8','#a78bfa'];
+  var vals = dims.map(function(k) { return Math.min(100, Math.max(0, scores[k] || 0)); });
+  for (var i = 0; i <= n; i++) {
+    var angle = -Math.PI/2 + 2*Math.PI*i/n;
+    var v = vals[i % n] / 100;
+    var x = cx + R * v * Math.cos(angle);
+    var y = cy + R * v * Math.sin(angle);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(129,140,248,.15)';
+  ctx.fill();
+  ctx.strokeStyle = '#818cf8';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // 标签
+  ctx.font = '10px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (var i = 0; i < n; i++) {
+    var angle = -Math.PI/2 + 2*Math.PI*i/n;
+    var labelR = R + 14;
+    var x = cx + labelR * Math.cos(angle);
+    var y = cy + labelR * Math.sin(angle);
+    ctx.fillStyle = 'rgba(255,255,255,.5)';
+    ctx.fillText(dims[i], x, y);
+  }
 }

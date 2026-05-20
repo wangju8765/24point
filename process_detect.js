@@ -56,11 +56,20 @@ async function main() {
   // 3. 调用 DashScope LLM
   const analysis = await callDashScope(prompt);
 
-  // 4. 写入结果
+  // 4. 解析或直接存储JSON结果
+  var structured = null;
+  try {
+    // LLM输出可能包含markdown代码块包裹
+    var jsonStr = analysis;
+    var m = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (m) jsonStr = m[1];
+    var parsed = JSON.parse(jsonStr);
+    if (parsed.scores && parsed.interpretations) structured = parsed;
+  } catch(e) { /* not JSON, store as plain text */ }
+
   const result = {
     requestId,
-    analysis,
-    suggestions: extractSuggestions(analysis),
+    analysis: structured || analysis,
     processedAt: Date.now()
   };
 
@@ -121,8 +130,8 @@ function buildPrompt(data) {
     : `完成${solvedItems.length}/${problems.length}题，撤销${totalUndos}次，提示${totalHints}次`;
 
   const toneGuide = allSolved && avgTime < 15 && totalUndos === 0
-    ? '此人水平很高。分析要肯定其优势，建议挑战更高难度或限时模式。不要说"不足""需要练"。'
-    : '客观分析优势与待提升方向，建议要具体可执行。';
+    ? '此人水平很高。评分85-100分之间，客观反映高水平。建议时称为"挑战方向"而非"训练"。'
+    : '评分0-100之间，客观反映实际水平。';
 
   return `你是一位教练。以下是某人在24点检测中的表现数据。
 
@@ -130,26 +139,42 @@ ${header}
 
 ${summaries}
 
-## 分析要求
-${toneGuide}
+## 要求
+分析5项基础能力，输出严格JSON格式：
 
-请输出以下内容：
+{
+  "summary": "一句话总结，30字内。把数据翻译成结论，不要复述数字",
+  "scores": {
+    "数字敏感度": 0-100,
+    "自动化程度": 0-100,
+    "运算精度": 0-100,
+    "工作记忆": 0-100,
+    "策略运用": 0-100
+  },
+  "interpretations": {
+    "数字敏感度": "一句话解释，这项能力是什么、当前水平如何",
+    "自动化程度": "一句话解释",
+    "运算精度": "一句话解释",
+    "工作记忆": "一句话解释",
+    "策略运用": "一句话解释"
+  },
+  "advice": "一句真人能做到的建议，不要说空话"
+}
 
-【总体】30字以内，把数据翻译成结论（如："9秒/题且零失误，说明基础运算非常熟练"），不要只复述数字
-
-【基础运算】20字内评估加减乘除的熟练程度（看用时和撤销）
-
-【数字组合】20字内评估对数字搭配的敏感度（看探索数量和首次操作时间）
-
-【策略运用】20字内评估遇到困难时的应对方式，只有能看出时再说，看不出就说"数据不足以判断"
-
-【建议】20字内，只写一句真人能做到的具体行动（如"练分数模式""计时挑战"，但不要说"预设框架""多路径推演"这种空话）
+评分参考：
+- 数字敏感度：看探索了哪些组合、首次操作速度
+- 自动化程度：看每次操作的停留时间、简单题是否瞬间出结果
+- 运算精度：看撤销次数、解出率
+- 工作记忆：看长静默后是否正确完成、中间步骤是否需要外部辅助
+- 策略运用：看遇到难题时是否换方向、探索是否有序
 
 规则：
-- 别复述数字，要解释数字的意义
-- 每句10-20字，不要说空话
-- 不确定的能力就别提，宁缺毋滥
-- 建议必须是日常能做的事`;
+- JSON必须合法，不要加额外文字
+- 不确定的能力打中等分（50-60），解释写"数据有限"
+- 得分很高（>85）时解释用肯定语气
+- 得分较低时解释指出方向但不否"不足"
+- 所有解释用人话，别用术语
+- 建议必须真人能做到，如"限时挑战""分数模式""专项练习"等`;
 }
 
 async function callDashScope(prompt) {
