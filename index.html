@@ -742,16 +742,61 @@ function performMerge(di, ti, op, result, label) {
       b:{id:tc.id,value:tc.value,num:tc.num||tc.value,den:tc.den||1,history:tc.history,colorIdx:tc.colorIdx,x:tc.x,y:tc.y,fracDisplay:tc.fracDisplay},
     };
     state.cards.push(nc); state.steps++;
+    _freeLog('merge', { dragged: dc.value, target: tc.value, op: op, result: num/den });
     hideBubbles(); renderGame(true); isMerging = false;
     checkGameState(); updateStatus();
   }, 100);
   dragCardId = null; state.draggedCard = null; state.targetCard = null; state.lockedCard = null;
 }
 
+// === 数据收集（自由练习埋点）===
+var _freeEventLog = [];
+var _freePuzzle = null;
+var _freeStartTime = 0;
+
+function _freeLog(type, data) {
+  _freeEventLog.push({ ts: Date.now(), type: type, data: data });
+}
+
+function doUpload(solved) {
+  if (!_freePuzzle) return;
+  var u = getUser();
+  if (!u) u = { name: 'guest', grade: 0, deviceId: getDeviceId() };
+  var timeMs = getElapsedSeconds() * 1000;
+  var data = {
+    name: '_freeplay_',
+    text: JSON.stringify({
+      user: u,
+      problem: _freePuzzle,
+      eventLog: _freeEventLog,
+      solved: solved,
+      steps: state.steps || 0,
+      timeMs: timeMs,
+      mode: state.mode,
+      rule: state.rule,
+      thinkMode: state.thinkMode
+    }),
+    time: Date.now()
+  };
+  try {
+    fetch('https://pkxmsfyzcphzvuangrzs.supabase.co/rest/v1/feedback', {
+      method: 'POST',
+      headers: {
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBreG1zZnl6Y3BoenZ1YW5ncnpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNDkxNzcsImV4cCI6MjA5NDYyNTE3N30.K1_niR4ZylqzbDPFnmTs5HRo2aEbObkGw3V9clM1czo',
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(data)
+    }).catch(function(e){});
+  } catch(e){}
+  _freeEventLog = []; _freePuzzle = null;
+}
+
 function checkGameState() {
   if (state.cards.length === 1 && Math.abs(state.cards[0].value - 24) < 1e-4) {
     state.gameOver = true; stopTimer(); Sound.win();
     document.getElementById('win-time-big').textContent = formatTimeNear(getElapsedSeconds());
+    doUpload(true);
     setTimeout(() => winModal.classList.add('show'), 500);
   }
 }
@@ -806,6 +851,9 @@ function newGame() {
   startTimer(); state.initialPuzzle = [...nums];
   state.cards = nums.map((v, i) => ({ id: state.nextId++, value: v, history: '', x: pos[i].x, y: pos[i].y, colorIdx: i, entering: true }));
   renderGame(true); updateStatus();
+  // 数据收集：开始新一局
+  _freeEventLog = []; _freePuzzle = [...nums]; _freeStartTime = Date.now();
+  _freeLog('problem_numbers', { numbers: nums });
 }
 
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
