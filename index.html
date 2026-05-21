@@ -873,7 +873,6 @@ function doUpload(solved) {
 (function(){'use strict';
   document.getElementById("mc-modal-continue").addEventListener("click",function(){document.getElementById("mc-modal").style.display="none";document.getElementById("mc-card").style.transform="";mcRun();});
   document.getElementById("mc-modal-back").addEventListener("click",function(){document.getElementById("mc-modal").style.display="none";document.getElementById("mc-game").style.display="none";document.getElementById("mc-start-screen").style.display="flex";document.getElementById("mc-container").style.display="none"; document.getElementById("mode-screen").style.display="flex"; });
-}
 
 // === 用户系统 ===
 var _userInfo = null;
@@ -972,7 +971,10 @@ textInput.addEventListener('input',checkForm);
 sendBtn.addEventListener('click',sendMessage);
 textInput.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(!sendBtn.disabled)sendMessage();}});
 
-// 自动填名字
+  // 自动填名字
+  var u = getUser();
+  if (u && nameInput) { nameInput.value = u.name; nameInput.readOnly = true; nameInput.style.color = 'rgba(255,255,255,.7)'; }
+})();
 </script>
 </body>
 </html>
