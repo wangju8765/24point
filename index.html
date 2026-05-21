@@ -907,11 +907,9 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('exit-btn').addEventListener('click',function(){document.getElementById('exit-modal').classList.add('show');});
   document.getElementById('exit-cancel').addEventListener('click',function(){document.getElementById('exit-modal').classList.remove('show');});
   document.getElementById('exit-confirm').addEventListener('click',function(){document.getElementById('exit-modal').classList.remove('show');document.getElementById('app').style.display='none'; document.getElementById('mode-screen').style.display='flex'; });
-  // 如果已有用户信息，初始化时填入留言板
-  var u = getUser();
-  if (u) {
-    var ni = document.getElementById('win-fb-name');
-    if (ni) { ni.value = u.name; ni.readOnly = true; ni.style.color = 'rgba(255,255,255,.7)'; }
+  initMathchain();
+});
+
 const SUPABASE_URL = 'https://pkxmsfyzcphzvuangrzs.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBreG1zZnl6Y3BoenZ1YW5ncnpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNDkxNzcsImV4cCI6MjA5NDYyNTE3N30.K1_niR4ZylqzbDPFnmTs5HRo2aEbObkGw3V9clM1czo';
 const btn = document.getElementById('mode-fb-btn');
@@ -944,3 +942,6 @@ sendBtn.addEventListener('click',sendMessage);
 textInput.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(!sendBtn.disabled)sendMessage();}});
 
 // 自动填名字
+</script>
+</body>
+</html>
