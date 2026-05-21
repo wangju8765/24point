@@ -226,6 +226,12 @@ var SoundFX={
       o.connect(g);g.connect(SoundFX.ctx.destination);o.start(st);o.stop(st+0.16);
     });
   })},
+  click:function(){this._play(function(t){
+    var o=SoundFX.ctx.createOscillator(),g=SoundFX.ctx.createGain();
+    o.type='sine';o.frequency.value=1200;
+    g.gain.setValueAtTime(0.04,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.04);
+    o.connect(g);g.connect(SoundFX.ctx.destination);o.start(t);o.stop(t+0.05);
+  })},
   correct:function(){this._play(function(t){
     [523,659,784].forEach(function(f,i){
       var o=SoundFX.ctx.createOscillator(),g=SoundFX.ctx.createGain();
@@ -446,17 +452,20 @@ function startGame(){
 // 数字键盘事件
 document.querySelectorAll('.np-btn[data-d]').forEach(function(b){
   b.addEventListener('click',function(){
+    SoundFX.click();
     inputBuf+=this.dataset.d;
     updateNpDisplay();
   });
 });
 document.getElementById('np-clear').addEventListener('click',function(){
+  SoundFX.click();
   inputBuf='';updateNpDisplay();
 });
 document.getElementById('np-back').addEventListener('click',function(){
+  SoundFX.click();
   inputBuf=inputBuf.slice(0,-1);updateNpDisplay();
 });
-document.getElementById('np-confirm').addEventListener('click',checkAnswer);
+document.getElementById('np-confirm').addEventListener('click',function(){SoundFX.click();checkAnswer();});
 
 // 静音开关
 document.getElementById('sound-toggle').addEventListener('click',function(){
