@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🃏 算24点 - 自由练习</title>
+<script>
+var _hmt = _hmt || [];
+(function() {
+ var hm = document.createElement("script");
+ hm.src = "https://hm.baidu.com/hm.js?26d0faa6724a20a48ecb6f5c45e810eb";
+ var s = document.getElementsByTagName("script")[0];
+ s.parentNode.insertBefore(hm, s);
+})();
+</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:#0f0f1a;color:#eee;touch-action:manipulation;-webkit-overflow-scrolling:touch}
+#app{width:100%;height:100%;display:flex;flex-direction:column;max-width:480px;margin:0 auto;position:relative;overflow:hidden}
+#header{padding:20px 10px 4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;flex-wrap:wrap;gap:6px}
+#bubble-layer.think-fast .mini-card .mc-result{font-size:28px;font-weight:800;line-height:1;letter-spacing:-.5px;flex:1;display:flex;align-items:center;justify-content:center}
+#bubble-layer.think-deep .mini-card .mc-result{font-size:36px;font-weight:800;line-height:1;flex:1;display:flex;align-items:center;justify-content:center}
+#think-group,#mode-group,#rule-group{display:flex;gap:3px;background:rgba(255,255,255,.08);border-radius:12px;padding:3px}
+.think-btn,.mode-btn,.rule-btn{padding:4px 11px;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;transition:all .25s;color:rgba(255,255,255,.5);background:transparent}
+.think-btn.active{background:#10b981;color:#fff;box-shadow:0 2px 8px rgba(16,185,129,.35)}
+.mode-btn.active{background:#f59e0b;color:#1a1a2e;box-shadow:0 2px 8px rgba(245,158,11,.35)}
+.rule-btn.active{background:#818cf8;color:#1a1a2e;box-shadow:0 2px 8px rgba(129,140,248,.35)}
+#game-area{flex:1;position:relative;overflow:hidden;touch-action:none}
+#card-container{position:absolute;inset:0}
+.card{position:absolute;width:90px;height:125px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab;transition:box-shadow .2s,transform .15s;will-change:transform;touch-action:none}
+.card-inner{width:100%;height:100%;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.15)}
+.card-value{font-size:42px;font-weight:800;line-height:1;letter-spacing:-1px}
+.card-sub{position:absolute;bottom:6px;font-size:11px;color:rgba(255,255,255,.55);letter-spacing:.3px;white-space:nowrap;max-width:80%;overflow:hidden;text-overflow:ellipsis}
+.card-entering{animation:cardEnter .3s cubic-bezier(.34,1.56,.64,1)}
+.card-merging{animation:cardMerge .12s ease forwards}
+.card-merging-out{animation:cardMergeOut .1s ease forwards}
+@keyframes cardEnter{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes cardMerge{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
+@keyframes cardMergeOut{0%{transform:scale(1);opacity:1}100%{transform:scale(.5);opacity:0}}
+.card-color-0 .card-inner{background:linear-gradient(145deg,#2d1b69,#1a0e3e);border:1px solid rgba(139,92,246,.3)}
+.card-color-1 .card-inner{background:linear-gradient(145deg,#1b4a6b,#0e2a3e);border:1px solid rgba(56,189,248,.3)}
+.card-color-2 .card-inner{background:linear-gradient(145deg,#6b2d1b,#3e1a0e);border:1px solid rgba(251,146,60,.3)}
+.card-color-3 .card-inner{background:linear-gradient(145deg,#1b6b3d,#0e3e26);border:1px solid rgba(52,211,153,.3)}
+.card.dragging{z-index:100;transform:scale(1.08);box-shadow:0 12px 40px rgba(0,0,0,.45),0 0 0 2px rgba(245,158,11,.4);cursor:grabbing;transition:none}
+.card.dragging .card-inner{transform:rotate(2deg)}
+.card.hover-target-outline{outline:2px dashed rgba(245,158,11,.3);outline-offset:4px;border-radius:14px}
+#timer-center{display:flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;padding:24px 0 24px}
+#tc-icon{font-size:32px;line-height:1}
+#tc-display{font-size:28px;font-weight:800;letter-spacing:3px;color:rgba(255,255,255,.4);font-variant-numeric:tabular-nums}
+#bubble-layer{position:absolute;inset:0;pointer-events:none;z-index:150}
+.mini-card{position:absolute;width:72px;height:88px;border-radius:10px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:transform .15s;box-shadow:0 4px 12px rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.15);pointer-events:auto;background:rgba(20,20,40,.95);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.mini-card:active{transform:scale(.9)}
+.mini-card .mc-opname{width:100%;font-size:12px;font-weight:700;line-height:20px;text-align:center;letter-spacing:2px;color:rgba(255,255,255,.85);flex-shrink:0;border-radius:9px 9px 0 0}
+.mini-card .mc-result{font-size:28px;font-weight:800;line-height:1;letter-spacing:-.5px;flex:1;display:flex;align-items:center;justify-content:center}
+.mini-card.mc-add .mc-opname{background:rgba(99,102,241,.5)}
+.mini-card.mc-sub .mc-opname{background:rgba(236,72,153,.5)}
+.mini-card.mc-mul .mc-opname{background:rgba(52,211,153,.5)}
+.mini-card.mc-div .mc-opname{background:rgba(251,146,60,.5)}
+.mini-card.mc-disabled{opacity:.4!important;cursor:default;pointer-events:none!important}
+.mini-card.mc-disabled .mc-opname{background:rgba(100,100,100,.4)!important}
+.mini-card.mc-disabled .mc-result{color:rgba(255,255,255,.4)}
+#controls{padding:6px 10px 4px;display:flex;gap:6px;flex-shrink:0;align-items:center;justify-content:center}
+#controls button{border:none;border-radius:10px;padding:10px 0;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:3px;white-space:nowrap;flex:1;max-width:110px}
+#controls button:active{transform:scale(.93)}
+.btn-undo{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7)}
+.btn-undo:hover{background:rgba(255,255,255,.12)}
+.btn-undo:disabled{opacity:.25;cursor:default}
+.btn-new{background:rgba(245,158,11,.15);color:#f59e0b}
+.btn-new:hover{background:rgba(245,158,11,.25)}
+.btn-reset{background:rgba(59,130,246,.15);color:#60a5fa}
+.btn-reset:hover{background:rgba(59,130,246,.25)}
+.btn-hint{background:rgba(99,102,241,.15);color:#818cf8;font-size:13px;padding:8px 12px}
+.btn-hint:hover{background:rgba(99,102,241,.25)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:200;animation:fadeIn .3s}
+.modal-overlay.show{display:flex}
+.modal-box{background:linear-gradient(145deg,#1e1e3a,#15152a);border-radius:24px;padding:32px 28px 24px;text-align:center;max-width:320px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.08);animation:modalEnter .35s cubic-bezier(.34,1.56,.64,1)}
+@keyframes fadeIn{0%{opacity:0}100%{opacity:1}}
+@keyframes modalEnter{0%{transform:scale(.8) translateY(20px);opacity:0}100%{transform:scale(1) translateY(0);opacity:1}}
+.win-time-big{font-size:56px;font-weight:800;line-height:1.1;background:linear-gradient(135deg,#f7c948,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
+.win-desc{font-size:16px!important}
+.modal-desc{font-size:15px;color:rgba(255,255,255,.6);margin-bottom:4px;line-height:1.5}
+.modal-buttons{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:0}
+.modal-buttons button{border:none;border-radius:14px;padding:12px 24px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s}
+.modal-buttons button:active{transform:scale(.95)}
+.modal-btn-primary{background:#f59e0b;color:#1a1a2e}
+.modal-btn-primary:hover{background:#f7c948;box-shadow:0 4px 16px rgba(245,158,11,.35)}
+.modal-btn-secondary{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7)}
+.modal-btn-secondary:hover{background:rgba(255,255,255,.12)}
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.8);color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;backdrop-filter:blur(8px)}
+.toast.show{opacity:1}
+
+/* Start Screen */
+.start-inner{text-align:center;max-width:380px;width:100%}
+.btn-skip{background:rgba(107,114,128,.2);color:rgba(255,255,255,.45)}
+.btn-skip:hover{background:rgba(107,114,128,.35);color:rgba(255,255,255,.65)}
+
+/* Mode Screen - level 2 menu */
+
+/* Rules Screen - level 3 page */
+
+/* User Modal */
+#user-modal{position:fixed;inset:0;z-index:600;display:none;align-items:center;justify-content:center;background:linear-gradient(160deg,#0f0f1a,#16162e,#0f0f1a)}
+#user-modal .um-box{text-align:center;max-width:320px;width:90%;padding:20px}
+#user-modal .um-title{font-size:22px;font-weight:800;color:#fbbf24;margin-bottom:14px;letter-spacing:2px}
+#user-modal .um-field{margin-bottom:12px;text-align:left}
+#user-modal .um-label{font-size:12px;color:rgba(255,255,255,.45);margin-bottom:4px;letter-spacing:1px}
+#user-modal input[type=text],#user-modal select{width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#f0f0f0;font-size:15px;outline:none;font-family:inherit;transition:border-color .2s}
+#user-modal input[type=text]:focus,#user-modal select:focus{border-color:rgba(129,140,248,.6)}
+#user-modal select{appearance:none;-webkit-appearance:none;cursor:pointer}
+#user-modal select option{background:#1e1e3a;color:#f0f0f0}
+#user-modal .um-btn{background:linear-gradient(135deg,#f59e0b,#e88d0a);color:#1a1a2e;border:none;border-radius:12px;padding:11px 40px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;letter-spacing:2px;width:100%}
+#user-modal .um-btn:hover{box-shadow:0 4px 16px rgba(245,158,11,.3)}
+#user-modal .um-btn:active{transform:scale(.97)}
+#user-modal .um-btn:disabled{opacity:.4;cursor:default}
+#user-modal .um-skip{background:transparent;border:none;color:rgba(255,255,255,.3);font-size:12px;margin-top:10px;cursor:pointer;font-family:inherit}
+
+/* 心算链条 */
+
+/* Feedback Button & Modal */
+/* Win Modal Feedback */
+.win-msg{background:rgba(255,255,255,.06);border-radius:8px;padding:7px 10px;flex-shrink:0}
+.win-msg-name{font-size:11px;font-weight:600;color:rgba(255,255,255,.55);margin-bottom:2px}
+.win-msg-text{font-size:13px;color:rgba(255,255,255,.85);line-height:1.3;word-break:break-word}
+</style>
+</head>
+<body>
+
+    <div class="s-title">速算24点</div>
+    <div class="s-subtitle">拖拽合卡 · 动脑运算</div>
+    <button class="s-btn" id="start-btn">开 始 游 戏</button>
+  </div>
+</div>
+
+<div id="user-modal">
+  <div class="um-box">
+    <div class="um-title">👋 先认识一下</div>
+    <div class="um-field">
+      <div class="um-label">你的名字</div>
+      <input type="text" id="um-name" placeholder="输入你的名字" maxlength="20">
+    </div>
+    <div class="um-field">
+      <div class="um-label">年级</div>
+      <select id="um-grade">
+        <option value="">— 请选择 —</option>
+        <option value="1">一年级</option>
+        <option value="2">二年级</option>
+        <option value="3">三年级</option>
+        <option value="4">四年级</option>
+        <option value="5">五年级</option>
+        <option value="6">六年级</option>
+        <option value="7">七年级</option>
+        <option value="8">八年级</option>
+        <option value="9">九年级</option>
+        <option value="10">九年级及以上（成人）</option>
+      </select>
+    </div>
+    <button class="um-btn" id="um-confirm" disabled>确定</button>
+    <button class="um-skip" id="um-skip">跳过，随便看看 →</button>
+  </div>
+</div>
+  </div>
+</div>
+
+    </div>
+    <div style="display:flex;gap:8px">
+    </div>
+  </div>
+</div>
+
+      <div class="s-rule-label"><span class="s-emoji">🖐️</span> 拖动合并卡片</div>
+      <div class="s-diagram">
+        <span class="d-card d-c1">2</span>
+        <span class="d-arrow">→</span>
+        <span class="d-card d-c2">3</span>
+      </div>
+      <div class="s-rule-desc">将一张卡片拖到另一张上，选择运算合并</div>
+    </div>
+    <div class="s-rule-block">
+      <div class="s-rule-label"><span class="s-emoji">👇</span> 点击拆分卡片</div>
+      <div class="s-diagram">
+        <span class="d-card d-c3">5</span>
+        <span class="d-arrow2">→</span>
+        <span class="d-card d-c4">2</span>
+        <span class="d-card d-c5">3</span>
+      </div>
+      <div class="s-rule-desc">合并结果可以点开，退回上一步</div>
+    </div>
+    <div class="s-rule-block">
+      <div class="s-rule-label"><span class="s-emoji">🎯</span> 目标</div>
+      <div class="s-rule-desc">用4张牌通过加减乘除算出24，每张牌用1次</div>
+    </div>
+    <button class="rules-back" id="rules-back-btn">← 返回</button>
+  </div>
+</div>
+
+<!-- 心算链条 -->
+    <div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px 14px;width:100%;line-height:1.6">
+      <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:1px;margin-bottom:3px">🎯 玩法</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.5)">1. 屏幕会逐一显示一个操作链</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.5)">2. 用心算记住每一步的中间结果</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.5)">3. 全部显示完后输入最终答案</div>
+    </div>
+    <div style="width:100%">
+      <div style="font-size:11px;font-weight:700;color:rgba(16,185,129,.7);margin-bottom:4px">🧮 步数</div>
+      <div id="mc-steps" style="display:flex;gap:5px">
+        <button class="mc-cfg active" data-val="4">4步</button>
+        <button class="mc-cfg" data-val="5">5步</button>
+        <button class="mc-cfg" data-val="6">6步</button>
+      </div>
+    </div>
+    <div style="width:100%">
+      <div style="font-size:11px;font-weight:700;color:rgba(245,158,11,.7);margin-bottom:4px">🔢 数字</div>
+      <div id="mc-range" style="display:flex;gap:5px">
+        <button class="mc-cfg active" data-val="easy">简单</button>
+        <button class="mc-cfg" data-val="medium">中等</button>
+        <button class="mc-cfg" data-val="hard">困难</button>
+      </div>
+    </div>
+    <div style="width:100%">
+      <div style="font-size:11px;font-weight:700;color:rgba(129,140,248,.7);margin-bottom:4px">➗ 运算</div>
+      <div id="mc-ops" style="display:flex;gap:5px">
+        <button class="mc-cfg active" data-val="addsub">加减</button>
+        <button class="mc-cfg" data-val="addsubmul">加减乘</button>
+        <button class="mc-cfg" data-val="all">加减乘除</button>
+      </div>
+    </div>
+    <div style="width:100%">
+      <div style="font-size:11px;font-weight:700;color:rgba(244,114,182,.7);margin-bottom:4px">⏱ 节奏</div>
+      <div id="mc-pace" style="display:flex;gap:5px">
+        <button class="mc-cfg active" data-val="normal">标准</button>
+        <button class="mc-cfg" data-val="fast">快速</button>
+        <button class="mc-cfg" data-val="rapid">极速</button>
+      </div>
+    </div>
+  </div><div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">
+      <div id="mc-card" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:24px;padding:32px 44px;display:flex;flex-direction:column;align-items:center;gap:4px">
+        <div id="mc-display" style="font-size:52px;font-weight:800;letter-spacing:4px;min-height:68px;display:flex;align-items:center;justify-content:center">8</div>
+        <div id="mc-sub" style="font-size:14px;color:rgba(255,255,255,.3);min-height:20px">记住这个数字</div>
+      </div>
+    </div>
+    <div id="mc-progress" style="width:100%;height:6px;display:flex;gap:2px;padding:2px 16px"></div>
+    <div id="mc-numpad" style="padding:6px 16px 16px;display:none">
+      <div id="mc-input" style="height:44px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:#60a5fa;margin-bottom:6px"></div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:6px"><button class="mc-np" data-d="1">1</button><button class="mc-np" data-d="2">2</button><button class="mc-np" data-d="3">3</button></div>
+        <div style="display:flex;gap:6px"><button class="mc-np" data-d="4">4</button><button class="mc-np" data-d="5">5</button><button class="mc-np" data-d="6">6</button></div>
+        <div style="display:flex;gap:6px"><button class="mc-np" data-d="7">7</button><button class="mc-np" data-d="8">8</button><button class="mc-np" data-d="9">9</button></div>
+        <div style="display:flex;gap:6px"><button id="mc-clear" style="background:rgba(255,255,255,.04);color:rgba(255,255,255,.35);font-size:15px">C</button><button class="mc-np" data-d="0">0</button><button id="mc-back" style="background:rgba(255,255,255,.04);color:rgba(255,255,255,.35);font-size:15px">⌫</button></div>
+        <div style="display:flex;gap:6px"><button id="mc-confirm" style="background:#3b82f6;color:#fff;font-size:15px;letter-spacing:2px;padding:12px 0;flex:1" disabled>✓ 确认</button></div>
+      </div>
+    </div>
+  </div><div id="mc-rtitle" style="font-size:22px;font-weight:800;margin-bottom:8px">✅ 恭喜答对了</div>
+      <div id="mc-rcap" style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.8;padding:6px 0"></div>
+      <div id="mc-rstreak" style="font-size:14px;color:#fbbf24;font-weight:600;padding:2px 0;display:none"></div>
+      <div id="mc-rstats" style="font-size:12px;color:rgba(255,255,255,.3);margin-bottom:6px"></div>
+      <div style="display:flex;gap:10px;margin-top:10px">
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <div id="header">
+    <div style="font-size:26px;font-weight:800;color:#f59e0b;width:100%;text-align:center;letter-spacing:4px;margin-bottom:8px;padding-top:4px">速算24点</div>
+    <div id="think-group">
+      <button class="think-btn active" data-think="fast">快速</button>
+      <button class="think-btn" data-think="deep">思考</button>
+    </div>
+    <div id="mode-group">
+      <button class="mode-btn active" data-mode="easy">简单</button>
+      <button class="mode-btn" data-mode="normal">复杂</button>
+    </div>
+    <div id="rule-group">
+      <button class="rule-btn active" data-rule="int">整数</button>
+      <button class="rule-btn" data-rule="frac">分数</button>
+    </div>
+  </div>
+  <div id="timer-center">
+    <div id="tc-icon">⏱</div>
+    <div id="tc-display">0:00</div>
+  </div>
+  <div id="game-area">
+    <div id="card-container"></div>
+    <div id="bubble-layer"></div>
+  </div>
+  <div id="controls">
+    <button class="btn-hint" id="hint-btn">💡 提示</button>
+    <button class="btn-reset" id="reset-btn">🔄 重来</button>
+    <button class="btn-new" id="new-game-btn">🎲 新题</button>
+  </div>
+  <div id="exit-area" style="flex-shrink:0;padding:0 10px 30px;text-align:center">
+    <button class="btn-exit" id="exit-btn" style="background:rgba(239,68,68,.12);color:#f87171;border:none;border-radius:10px;padding:10px 0;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;width:110px;display:inline-flex;align-items:center;justify-content:center;gap:3px">🚪 返回大厅</button>
+  </div>
+</div>
+<div class="modal-overlay" id="win-modal">
+  <div class="modal-box">
+    <div class="win-time-big" id="win-time-big"></div>
+    <div class="modal-desc win-desc">🎉 你成功算出了 <strong>24</strong>！</div>
+    <div class="modal-buttons">
+      <button class="modal-btn-secondary" onclick="closeModal('win-modal'); state.gameOver = false;">继续回顾</button>
+      <button class="modal-btn-primary" id="win-next-btn">下一题 →</button>
+    </div>
+
+  </div>
+</div>
+<div class="modal-overlay" id="hint-modal">
+  <div class="modal-box">
+    <div class="modal-icon">💡</div>
+    <div class="modal-title">提示</div>
+    <div class="modal-desc" id="hint-text"></div>
+    <div class="modal-buttons" style="margin-top:16px">
+      <button class="modal-btn-primary" onclick="closeModal('hint-modal')">知道了</button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<!-- 退出确认弹窗 --><div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:16px;line-height:1.5">当前进度不会保存</div>
+    <div style="display:flex;gap:10px;justify-content:center">
+    </div>
+  </div>
+</div>
+
+<script>
+// Sound system
+const Sound = (() => {
+  let ctx = null;
+  function getCtx() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function play(freq, dur, type, vol, delay) {
+    const c = getCtx();
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(freq, c.currentTime + (delay || 0));
+    g.gain.setValueAtTime(vol || 0.15, c.currentTime + (delay || 0));
+    g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + (delay || 0) + dur);
+    o.connect(g); g.connect(c.destination);
+    o.start(c.currentTime + (delay || 0));
+    o.stop(c.currentTime + (delay || 0) + dur);
+  }
+  return {
+    pickUp() { play(600, 0.08, 'sine', 0.1); },
+    snapBack() { play(300, 0.1, 'triangle', 0.08); },
+    bubblesAppear() { play(880, 0.06, 'sine', 0.06); },
+    merge() { play(523, 0.12, 'sine', 0.12, 0); play(659, 0.12, 'sine', 0.12, 0.07); play(784, 0.15, 'sine', 0.1, 0.14); },
+    win() { [523, 587, 659, 784, 880, 1047].forEach((n, i) => play(n, 0.2, 'sine', 0.12, i * 0.1)); },
+  };
+})();
+
+// DOM refs
+const cardContainer = document.getElementById('card-container');
+const bubbleLayer = document.getElementById('bubble-layer');
+const newGameBtn = document.getElementById('new-game-btn');
+const hintBtn = document.getElementById('hint-btn');
+const winModal = document.getElementById('win-modal');
+const hintModal = document.getElementById('hint-modal');
+const toast = document.getElementById('toast');
+
+// Constants
+const TARGET = 24, CARD_W = 90, CARD_H = 125;
+const PROXIMITY_THRESHOLD = 150, FULL_OPACITY_DISTANCE = 50, MERGE_DROP_THRESHOLD = 50, COLORS = 4;
+const CARD_Y_OFFSET = -20;
+
+// Timer
+let gameStartTime = 0, timerInterval = null;
+function startTimer() { stopTimer(); gameStartTime = Date.now(); timerInterval = setInterval(updateTimerDisplay, 1000); updateTimerDisplay(); }
+function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
+function updateTimerDisplay() {
+  const e = Math.floor((Date.now() - gameStartTime) / 1000);
+  const d = document.getElementById('tc-display');
+  if (d) d.textContent = Math.floor(e / 60) + ':' + ((e % 60) < 10 ? '0' : '') + (e % 60);
+}
+function getElapsedSeconds() { return Math.floor((Date.now() - gameStartTime) / 1000); }
+function formatTimeNear(s) { return Math.floor(s / 60) > 0 ? Math.floor(s / 60) + '分' + (s % 60) + '秒' : s + '秒'; }
+
+// Math helpers
+function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+function fracStr(n, d) {
+  if (d === 0) return String(n);
+  if (d < 0) { n = -n; d = -d; }
+  const g = gcd(Math.abs(n), Math.abs(d));
+  n /= g; d /= g;
+  return d === 1 ? String(n) : n + '/' + d;
+}
+function fracOp(aN, aD, bN, bD, op) {
+  // Compute (aN/aD) op (bN/bD) -> {num, den}
+  if (op === '+') return { num: aN*bD + bN*aD, den: aD*bD };
+  if (op === '×') return { num: aN*bN, den: aD*bD };
+  if (op === '−') {
+    const left = aN*bD, right = bN*aD;
+    return left >= right ? { num: left-right, den: aD*bD } : { num: right-left, den: aD*bD };
+  }
+  if (op === '÷') return { num: aN*bD, den: aD*bN };
+  return { num: 0, den: 1 };
+}
+function simplifyFrac(num, den) {
+  if (den === 0) return { num, den: 1 };
+  if (den < 0) { num = -num; den = -den; }
+  const g = gcd(Math.abs(num), Math.abs(den));
+  return { num: num/g, den: den/g };
+}
+
+// State
+let state = { mode:'easy', rule:'int', cards:[], history:[], initialPuzzle:null, draggedCard:null, dragOffsetX:0, dragOffsetY:0, startX:0, startY:0, startZIndex:'', targetCard:null, lockedCard:null, steps:0, gameOver:false, nextId:0, thinkMode:'fast' };
+const mergeParents = {};
+
+// Puzzle generation
+function generateNumbers(mode, rule) {
+  const max = mode === 'easy' ? 10 : 13, min = 1;
+  const solver = rule === 'int' ? canSolveInt : canSolveFrac;
+  let nums, att = 0;
+  do { nums = [min + Math.random() * max | 0, min + Math.random() * max | 0, min + Math.random() * max | 0, min + Math.random() * max | 0]; att++; } while (!solver(nums) && att < 5000);
+  return nums;
+}
+function canSolveFrac(n) {
+  if (n.length === 1) return Math.abs(n[0] - 24) < 1e-4;
+  for (let i = 0; i < n.length; i++) for (let j = i + 1; j < n.length; j++) {
+    const rem = n.filter((_,k)=>k!==i&&k!==j), a = n[i], b = n[j];
+    const rs = [a + b, a * b, Math.max(a,b) - Math.min(a,b)];
+    const mn = Math.min(a,b), mx = Math.max(a,b);
+    if (mn) rs.push(mx / mn);
+    for (const r of rs) if (canSolveFrac([...rem, r])) return true;
+  }
+  return false;
+}
+function canSolveInt(n) {
+  if (n.length === 1) return Math.abs(n[0] - 24) < 1e-4;
+  for (let i = 0; i < n.length; i++) for (let j = i + 1; j < n.length; j++) {
+    const rem = n.filter((_,k)=>k!==i&&k!==j), a = n[i], b = n[j];
+    const rs = [a + b, a * b, Math.max(a,b) - Math.min(a,b)];
+    const mn = Math.min(a,b), mx = Math.max(a,b);
+    if (mn && mx % mn === 0) rs.push(mx / mn);
+    for (const r of rs) if (Number.isInteger(r) && canSolveInt([...rem, r])) return true;
+  }
+  return false;
+}
+
+function getCardLabel(v) { return Number.isInteger(v) ? String(v) : (v.toFixed(2).replace(/\.?0+$/, '')); }
+function createFracEl(str) {
+  // Return null so fallback to text display
+  return null;
+}
+
+function getBubblesForPair(ca, cb) {
+  const r = [], a = ca.value, b = cb.value;
+  const aN = ca.num || a, aD = ca.den || 1, bN = cb.num || b, bD = cb.den || 1;
+  const isFrac = state.rule === 'frac';
+  // +, ×: always valid
+  const add = fracOp(aN, aD, bN, bD, '+');
+  r.push({ op:'+', result:add.num/add.den, name:'加', label:getCardLabel(a)+'加'+getCardLabel(b), valid:true, frac:isFrac && add.den !== 1 ? fracStr(add.num, add.den) : null });
+  const mul = fracOp(aN, aD, bN, bD, '×');
+  r.push({ op:'×', result:mul.num/mul.den, name:'乘', label:getCardLabel(a)+'乘'+getCardLabel(b), valid:true, frac:isFrac && mul.den !== 1 ? fracStr(mul.num, mul.den) : null });
+  // −: big - small (both modes)
+  const sub = fracOp(aN, aD, bN, bD, '−');
+  r.push({ op:'−', result:sub.num/sub.den, name:'减', label:getCardLabel(Math.max(a,b))+'减'+getCardLabel(Math.min(a,b)), valid:true, frac:isFrac && sub.den !== 1 ? fracStr(sub.num, sub.den) : null });
+  // ÷: int mode=max/min, frac mode=dragged/&darr;
+  if (isFrac) {
+    const div = fracOp(aN, aD, bN, bD, '÷');
+    r.push({ op:'÷', result:div.num/div.den, name:'除', label:getCardLabel(a)+'除'+getCardLabel(b), valid:true, frac:div.den !== 1 ? fracStr(div.num, div.den) : null });
+  } else {
+    const mn = Math.min(a,b), mx = Math.max(a,b);
+    if (mn) {
+      const intDiv = mx / mn;
+      r.push({ op:'÷', result:intDiv, name:'除', label:getCardLabel(mx)+'除'+getCardLabel(mn), valid:Number.isInteger(intDiv), frac:null });
+    }
+  }
+  return r;
+}
+
+function createCardEl(v, h, x, y, ci, ac, zi, cid, fd) {
+  const el = document.createElement('div');
+  el.className = 'card card-color-' + (ci % COLORS);
+  if (ac) el.classList.add(ac);
+  el.style.left = x + 'px'; el.style.top = y + 'px';
+  if (zi !== undefined) el.style.zIndex = zi;
+  el.dataset.value = v; el.dataset.history = h || ''; el.dataset.x = x; el.dataset.y = y; el.dataset.colorIdx = ci;
+  const inner = document.createElement('div'); inner.className = 'card-inner';
+  const val = document.createElement('div'); val.className = 'card-value';
+  val.textContent = fd || getCardLabel(v);
+  inner.appendChild(val);
+  if (h) { const sub = document.createElement('div'); sub.className = 'card-sub'; sub.textContent = h; inner.appendChild(sub); }
+  el.appendChild(inner);
+  if (cid !== undefined && cid !== null) {
+    el.addEventListener('touchend', e => { if (!wasDragMoved && !isLockedMode) tapUndoCard(cid); });
+    el.addEventListener('mouseup', e => { if (!wasDragMoved && !isLockedMode) tapUndoCard(cid); });
+  }
+  return el;
+}
+
+function tapUndoCard(cid) {
+  if (cid === null || state.gameOver || isLockedMode || isMerging || wasDragMoved) return;
+  const p = mergeParents[cid];
+  if (!p) return;
+  const card = getCardState(cid);
+  if (!card) return;
+  saveSnapshot();
+  const ca = { id:p.a.id, value:p.a.value, num:p.a.num, den:p.a.den, history:p.a.history, x:p.a.x, y:p.a.y, colorIdx:p.a.colorIdx, entering:true, fracDisplay:p.a.fracDisplay };
+  const cb = { id:p.b.id, value:p.b.value, num:p.b.num, den:p.b.den, history:p.b.history, x:p.b.x, y:p.b.y, colorIdx:p.b.colorIdx, entering:true, fracDisplay:p.b.fracDisplay };
+  if (state.nextId <= p.a.id) state.nextId = p.a.id + 1;
+  if (state.nextId <= p.b.id) state.nextId = p.b.id + 1;
+  state.cards = state.cards.filter(c => c.id !== cid);
+  state.cards.push(ca, cb);
+  state.steps = Math.max(0, state.steps - 1);
+  delete mergeParents[cid];
+  hideBubbles(); renderGame(true); updateStatus();
+  showToast('已拆分');
+}
+
+function getCardState(id) { return state.cards.find(c => c.id === id); }
+function getCardEl(id) { return cardContainer.querySelector('.card[data-card-id="' + id + '"]'); }
+
+function computeCardPositions(count, cw, ch, pw, ph) {
+  const g = 28, yo = CARD_Y_OFFSET;
+  if (count === 4) { const tw = cw * 2 + g, th = ch * 2 + g, sx = (pw - tw) / 2, sy = (ph - th) / 2; return [{x:sx,y:sy+yo},{x:sx+cw+g,y:sy+yo},{x:sx,y:sy+ch+g+yo},{x:sx+cw+g,y:sy+ch+g+yo}]; }
+  if (count === 3) { const tw = cw * 2 + g, sx = (pw - tw) / 2, ty = ph / 2 - ch - g / 2, by = ph / 2 + g / 2; return [{x:(pw-cw)/2,y:ty+yo},{x:sx,y:by+yo},{x:sx+cw+g,y:by+yo}]; }
+  if (count === 2) { const tw = cw * 2 + g, sx = (pw - tw) / 2, sy = (ph - ch) / 2; return [{x:sx,y:sy+yo},{x:sx+cw+g,y:sy+yo}]; }
+  if (count === 1) return [{x:(pw-cw)/2,y:(ph-ch)/2+yo}];
+  return [];
+}
+
+function renderGame(kp) {
+  isLockedMode = false; isDragging = false; dragCardId = null;
+  state.draggedCard = null; state.targetCard = null; state.lockedCard = null; hideBubbles();
+  const rect = cardContainer.getBoundingClientRect();
+  const cw = rect.width || 340, ch = rect.height || 450;
+  cardContainer.innerHTML = '';
+  if (!state.cards.length) return;
+  const pos = kp ? state.cards.map(c => ({x:c.x,y:c.y})) : computeCardPositions(state.cards.length, CARD_W, CARD_H, cw, ch);
+  state.cards.forEach((card, i) => {
+    const p = pos[i]; card.x = p.x; card.y = p.y;
+    const ac = card.entering ? 'card-entering' : null;
+    delete card.entering;
+    const el = createCardEl(card.value, card.history, card.x, card.y, card.colorIdx, ac, (i+1)*10, card.id, card.fracDisplay);
+    el.dataset.cardId = card.id;
+    cardContainer.appendChild(el);
+  });
+  updateStatus();
+}
+function updateStatus() { }
+
+function showBubbles(draggedId, targetId) {
+  const dragged = getCardState(draggedId), target = getCardState(targetId);
+  if (!dragged || !target) return;
+  const ops = getBubblesForPair(dragged, target);
+  bubbleLayer.innerHTML = ''; bubbleLayer.style.pointerEvents = 'auto';
+  Sound.bubblesAppear();
+  const targetEl = getCardEl(targetId);
+  if (!targetEl) return;
+  const tx = target.x, ty = target.y, mw = 72, mh = 88, gap = 6;
+  const visualOrder = [0, 2, 1, 3], totalW = 4 * mw + 3 * gap;
+  const parentRect = cardContainer.getBoundingClientRect();
+  const pw = parentRect.width, ph = parentRect.height;
+  const rowX = Math.max(2, Math.min(pw - totalW - 2, tx + (CARD_W - totalW) / 2)), rowY = Math.max(2, ty - mh - 8);
+  bubbleLayer.classList.toggle('think-fast', state.thinkMode === 'fast');
+  bubbleLayer.classList.toggle('think-deep', state.thinkMode === 'deep');
+  visualOrder.forEach((oi, i) => {
+    const b = ops[oi]; if (!b) return;
+    const mc = document.createElement('div');
+    mc.className = 'mini-card mc-' + (b.op === '+' ? 'add' : b.op === '\u2212' ? 'sub' : b.op === '\u00d7' ? 'mul' : 'div');
+    const opName = document.createElement('div'); opName.className = 'mc-opname'; opName.textContent = b.name; mc.appendChild(opName);
+    const res = document.createElement('div'); res.className = 'mc-result';
+    if (state.thinkMode === 'fast') {
+      res.textContent = (state.rule === 'frac' && b.frac) ? b.frac : getCardLabel(b.result);
+    } else {
+      res.textContent = b.op;
+    }
+    mc.appendChild(res);
+    mc.style.left = (rowX + i * (mw + gap)) + 'px'; mc.style.top = rowY + 'px'; mc.style.opacity = '1';
+    mc.dataset.targetId = targetId; mc.dataset.draggedId = draggedId; mc.dataset.op = b.op; mc.dataset.result = b.result;
+    if (b.valid !== false) {
+      mc.addEventListener('click', e => { e.stopPropagation(); performMerge(draggedId, targetId, b.op, b.result, b.label); });
+      mc.addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); performMerge(draggedId, targetId, b.op, b.result, b.label); });
+    } else { mc.classList.add('mc-disabled'); }
+    bubbleLayer.appendChild(mc);
+  });
+}
+
+function updateBubbleOpacity(dist) {
+  const mcs = bubbleLayer.querySelectorAll('.mini-card');
+  if (!mcs.length) return;
+  const opacity = dist < PROXIMITY_THRESHOLD ? Math.max(0.15, Math.min(1, 1 - (dist - FULL_OPACITY_DISTANCE) / (PROXIMITY_THRESHOLD - FULL_OPACITY_DISTANCE))) : 0;
+  mcs.forEach(mc => mc.style.opacity = opacity);
+}
+
+function hideBubbles() { bubbleLayer.innerHTML = ''; bubbleLayer.style.pointerEvents = 'none'; }
+
+function findClosestCard(cx, cy, excludeId) {
+  const els = cardContainer.querySelectorAll('.card');
+  let closest = null, minDist = Infinity;
+  for (const el of els) {
+    const id = parseInt(el.dataset.cardId);
+    if (id === excludeId) continue;
+    const x = parseFloat(el.style.left), y = parseFloat(el.style.top);
+    const dist = Math.hypot(cx - x - CARD_W / 2, cy - y - CARD_H / 2);
+    if (dist < minDist) { minDist = dist; closest = { id, dist }; }
+  }
+  return closest;
+}
+
+function getPointerPos(e) {
+  if (e.changedTouches && e.changedTouches.length > 0) return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+  if (e.touches && e.touches.length > 0) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  return { x: e.clientX, y: e.clientY };
+}
+function getContainerPos(e) { const p = getPointerPos(e), r = cardContainer.getBoundingClientRect(); return { x: p.x - r.left, y: p.y - r.top }; }
+function restoreZIndex(el) { if (el && state.startZIndex) el.style.zIndex = state.startZIndex; }
+
+let isDragging = false, dragCardId = null, isLockedMode = false, ignoreClickUntil = 0, isMerging = false, wasDragMoved = false;
+
+function onPointerDown(e) {
+  if (state.gameOver) return;
+  const pos = getPointerPos(e), el = document.elementFromPoint(pos.x, pos.y), cardEl = el?.closest('.card');
+  if (isLockedMode && !cardEl) return;
+  if (!cardEl) return;
+  const id = parseInt(cardEl.dataset.cardId), isFloating = isLockedMode;
+  if (isLockedMode) clearLockedMode(false);
+  const cp = getContainerPos(e);
+  isDragging = true; dragCardId = id; wasDragMoved = false;
+  state.draggedCard = id; state.dragOffsetX = cp.x - parseFloat(cardEl.style.left); state.dragOffsetY = cp.y - parseFloat(cardEl.style.top);
+  if (isFloating) { const cs = getCardState(id); state.startX = cs ? cs.x : parseFloat(cardEl.style.left); state.startY = cs ? cs.y : parseFloat(cardEl.style.top); state.startZIndex = ''; }
+  else { state.startX = parseFloat(cardEl.style.left); state.startY = parseFloat(cardEl.style.top); state.startZIndex = cardEl.style.zIndex || ''; }
+  cardEl.classList.add('dragging'); cardEl.style.zIndex = '100';
+  Sound.pickUp();
+  cardContainer.querySelectorAll('.hover-target-outline').forEach(el => el.classList.remove('hover-target-outline'));
+  e.preventDefault();
+}
+
+function onPointerMove(e) {
+  if (!isDragging || dragCardId === null) return;
+  const cp = getContainerPos(e); wasDragMoved = true;
+  const el = getCardEl(dragCardId);
+  if (el) { el.style.left = (cp.x - state.dragOffsetX) + 'px'; el.style.top = (cp.y - state.dragOffsetY) + 'px'; }
+  const closest = findClosestCard(cp.x, cp.y, dragCardId);
+  cardContainer.querySelectorAll('.hover-target-outline').forEach(el => el.classList.remove('hover-target-outline'));
+  if (closest && closest.dist < PROXIMITY_THRESHOLD) { const te = getCardEl(closest.id); if (te) te.classList.add('hover-target-outline'); }
+  if (closest && closest.dist < PROXIMITY_THRESHOLD && closest.id !== state.targetCard) { state.targetCard = closest.id; showBubbles(dragCardId, closest.id); }
+  else if (closest && closest.dist < PROXIMITY_THRESHOLD) updateBubbleOpacity(closest.dist);
+  else { state.targetCard = null; hideBubbles(); }
+  e.preventDefault();
+}
+
+function clearLockedMode(snapBack) {
+  isLockedMode = false; hideBubbles();
+  if (snapBack && dragCardId !== null) {
+    const el = getCardEl(dragCardId);
+    if (el) {
+      restoreZIndex(el);
+      el.style.transition = 'left .25s, top .25s';
+      const card = getCardState(dragCardId);
+      if (card) { el.style.left = card.x + 'px'; el.style.top = card.y + 'px'; }
+      setTimeout(() => { if (el) el.style.transition = ''; }, 300);
+    }
+  }
+  state.targetCard = null; state.lockedCard = null; state.draggedCard = null;
+  dragCardId = null; isDragging = false; state.startZIndex = '';
+  cardContainer.querySelectorAll('.hover-target-outline').forEach(el => el.classList.remove('hover-target-outline'));
+}
+
+function onPointerUp(e) {
+  if (!isDragging || dragCardId === null) return;
+  const cp = getContainerPos(e), el = getCardEl(dragCardId);
+  if (el) el.classList.remove('dragging');
+  const closest = findClosestCard(cp.x, cp.y, dragCardId);
+  if (closest && closest.dist <= MERGE_DROP_THRESHOLD) {
+    state.lockedCard = closest.id; state.targetCard = closest.id;
+    const mcs = bubbleLayer.querySelectorAll('.mini-card');
+    mcs.forEach(mc => { mc.style.opacity = '1'; mc.style.display = 'flex'; });
+    isLockedMode = true; ignoreClickUntil = Date.now() + 300; isDragging = false;
+  } else {
+    if (el) {
+      const moved = Math.abs(parseFloat(el.style.left) - state.startX) > 2 || Math.abs(parseFloat(el.style.top) - state.startY) > 2;
+      restoreZIndex(el);
+      el.style.transition = 'left .25s, top .25s'; el.style.left = state.startX + 'px'; el.style.top = state.startY + 'px';
+      setTimeout(() => { if (el) el.style.transition = ''; }, 300);
+      if (moved) Sound.snapBack();
+    }
+    hideBubbles(); isDragging = false; dragCardId = null;
+    state.draggedCard = null; state.targetCard = null; state.lockedCard = null; state.startZIndex = '';
+  }
+  cardContainer.querySelectorAll('.hover-target-outline').forEach(el => el.classList.remove('hover-target-outline'));
+  e.preventDefault();
+}
+
+function onPointerCancel() { clearLockedMode(true); }
+
+function onBackgroundClick(e) {
+  if (!isLockedMode || Date.now() < ignoreClickUntil) return;
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  if (el?.closest('.mini-card') || el?.closest('.card')) return;
+  clearLockedMode(true);
+}
+
+function saveSnapshot() {
+  state.history.push(JSON.parse(JSON.stringify(state.cards.map(c => ({id:c.id,value:c.value,history:c.history,x:c.x,y:c.y,colorIdx:c.colorIdx})))));
+  if (state.history.length > 50) state.history.shift();
+}
+
+function performMerge(di, ti, op, result, label) {
+  if (state.gameOver || isMerging) return;
+  isMerging = true; isLockedMode = false; isDragging = false;
+  Sound.merge();
+  const dc = getCardState(di), tc = getCardState(ti);
+  if (!dc || !tc) { isMerging = false; return; }
+  saveSnapshot();
+  const de = getCardEl(di), te = getCardEl(ti);
+  if (de) de.classList.add('card-merging-out');
+  if (te) te.classList.add('card-merging');
+  const ci = (dc.colorIdx + tc.colorIdx) % COLORS;
+  setTimeout(() => {
+    state.cards = state.cards.filter(c => c.id !== di && c.id !== ti);
+    let num = result, den = 1;
+    if (state.rule === 'frac') {
+      const aN = dc.num || dc.value, aD = dc.den || 1, bN = tc.num || tc.value, bD = tc.den || 1;
+      const f = fracOp(aN, aD, bN, bD, op);
+      const s = simplifyFrac(f.num, f.den);
+      num = s.num; den = s.den;
+    }
+    const fd = (state.rule === 'frac' && den !== 1) ? fracStr(num, den) : null;
+    const nc = { id: state.nextId++, value: num/den, num, den, history: label, x: tc.x, y: tc.y, colorIdx: ci, entering: true, fracDisplay: fd };
+    mergeParents[nc.id] = {
+      a:{id:dc.id,value:dc.value,num:dc.num||dc.value,den:dc.den||1,history:dc.history,colorIdx:dc.colorIdx,x:dc.x,y:dc.y,fracDisplay:dc.fracDisplay},
+      b:{id:tc.id,value:tc.value,num:tc.num||tc.value,den:tc.den||1,history:tc.history,colorIdx:tc.colorIdx,x:tc.x,y:tc.y,fracDisplay:tc.fracDisplay},
+    };
+    state.cards.push(nc); state.steps++;
+    _freeLog('merge', { dragged: dc.value, target: tc.value, op: op, result: num/den });
+    hideBubbles(); renderGame(true); isMerging = false;
+    checkGameState(); updateStatus();
+  }, 100);
+  dragCardId = null; state.draggedCard = null; state.targetCard = null; state.lockedCard = null;
+}
+
+// === 数据收集（自由练习埋点）===
+var _freeEventLog = [];
+var _freePuzzle = null;
+var _freeStartTime = 0;
+
+function _freeLog(type, data) {
+  _freeEventLog.push({ ts: Date.now(), type: type, data: data });
+}
+
+function doUpload(solved) {
+  if (!_freePuzzle) return;
+  var u = getUser();
+  if (!u) u = { name: 'guest', grade: 0, deviceId: getDeviceId() };
+  var timeMs = getElapsedSeconds() * 1000;
+  var data = {
+    name: '_freeplay_',
+    text: JSON.stringify({
+      user: u,
+      problem: _freePuzzle,
+      eventLog: _freeEventLog,
+      solved: solved,
+      steps: state.steps || 0,
+      timeMs: timeMs,
+      mode: state.mode,
+      rule: state.rule,
+      thinkMode: state.thinkMode
+    }),
+    time: Date.now()
+  };
+  try {
+    fetch('https://pkxmsfyzcphzvuangrzs.supabase.co/rest/v1/feedback', {
+      method: 'POST',
+      headers: {
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBreG1zZnl6Y3BoenZ1YW5ncnpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNDkxNzcsImV4cCI6MjA5NDYyNTE3N30.K1_niR4ZylqzbDPFnmTs5HRo2aEbObkGw3V9clM1czo',
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(data)
+    }).catch(function(e){});
+  } catch(e){}
+  _freeEventLog = []; _freePuzzle = null;
+}
+
+function checkGameState() {
+  if (state.cards.length === 1 && Math.abs(state.cards[0].value - 24) < 1e-4) {
+    state.gameOver = true; stopTimer(); Sound.win();
+    document.getElementById('win-time-big').textContent = formatTimeNear(getElapsedSeconds());
+    doUpload(true);
+    setTimeout(() => winModal.classList.add('show'), 500);
+  }
+}
+
+function undo() {
+  if (state.history.length === 0) return;
+  closeModal('win-modal'); state.gameOver = false;
+  const p = state.history.pop(); state.cards = p; state.steps = Math.max(0, state.steps - 1);
+  hideBubbles(); renderGame(true); updateStatus();
+}
+
+function resetGame() {
+  if (!state.initialPuzzle) { newGame(); return; }
+  closeModal('win-modal'); closeModal('hint-modal');
+  for (const k in mergeParents) delete mergeParents[k];
+  state.history = []; state.steps = 0; state.gameOver = false;
+  state.draggedCard = null; state.targetCard = null; state.lockedCard = null; hideBubbles();
+  const rect = cardContainer.getBoundingClientRect();
+  const cw = rect.width || 340, ch = rect.height || 450;
+  const pos = computeCardPositions(4, CARD_W, CARD_H, cw, ch);
+  startTimer();
+  state.cards = state.initialPuzzle.map((v, i) => ({ id: state.nextId++, value: v, history: '', x: pos[i].x, y: pos[i].y, colorIdx: i, entering: true }));
+  renderGame(true); updateStatus();
+}
+
+function showHint() {
+  if (state.cards.length < 2) return;
+  for (let i = 0; i < state.cards.length; i++) for (let j = i + 1; j < state.cards.length; j++) {
+    const a = state.cards[i].value, b = state.cards[j].value;
+    const rem = state.cards.filter((_,k) => k !== i && k !== j).map(c => c.value);
+    const ops = [{op:'加',r:a+b},{op:'乘',r:a*b},{op:'减',r:Math.max(a,b)-Math.min(a,b)}];
+    const mn = Math.min(a,b), mx = Math.max(a,b);
+    if (mn && (state.rule === 'frac' || mx % mn === 0)) ops.push({op:'除',r:mx/mn});
+    for (const to of ops) {
+      const s = state.rule === 'int' ? canSolveInt : canSolveFrac;
+      if (s([...rem, to.r])) { document.getElementById('hint-text').innerHTML = '\u8bd5\u8bd5\u628a <strong>' + getCardLabel(a) + '</strong> \u62d6\u5230 <strong>' + getCardLabel(b) + '</strong> \u4e0a\uff0c\u7528 <strong>' + to.op + '</strong> \ud83d\udc46'; hintModal.classList.add('show'); return; }
+    }
+  }
+  document.getElementById('hint-text').textContent = '\u8fd9\u9053\u9898\u662f\u6709\u89e3\u7684\uff0c\u591a\u8bd5\u8bd5\u4e0d\u540c\u7684\u7ec4\u5408\u65b9\u5f0f\u5427\uff01';
+  hintModal.classList.add('show');
+}
+
+function newGame() {
+  closeModal('win-modal'); closeModal('hint-modal');
+  for (const k in mergeParents) delete mergeParents[k];
+  state.history = []; state.steps = 0; state.gameOver = false;
+  state.draggedCard = null; state.targetCard = null; state.lockedCard = null; hideBubbles();
+  const nums = generateNumbers(state.mode, state.rule);
+  const rect = cardContainer.getBoundingClientRect();
+  const cw = rect.width || 340, ch = rect.height || 450;
+  const pos = computeCardPositions(4, CARD_W, CARD_H, cw, ch);
+  startTimer(); state.initialPuzzle = [...nums];
+  state.cards = nums.map((v, i) => ({ id: state.nextId++, value: v, history: '', x: pos[i].x, y: pos[i].y, colorIdx: i, entering: true }));
+  renderGame(true); updateStatus();
+  // 数据收集：开始新一局
+  _freeEventLog = []; _freePuzzle = [...nums]; _freeStartTime = Date.now();
+  _freeLog('problem_numbers', { numbers: nums });
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+let toastTimer = null;
+function showToast(msg) { toast.textContent = msg; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 1500); }
+
+function init() {
+  document.querySelectorAll('.mode-btn').forEach(btn => { btn.addEventListener('click', () => { document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); state.mode = btn.dataset.mode; newGame(); }); });
+  document.querySelectorAll('.rule-btn').forEach(btn => { btn.addEventListener('click', () => { document.querySelectorAll('.rule-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); state.rule = btn.dataset.rule; newGame(); }); });
+  document.querySelectorAll('.think-btn').forEach(btn => { btn.addEventListener('click', () => {
+    document.querySelectorAll('.think-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.thinkMode = btn.dataset.think;
+    const bl = document.getElementById('bubble-layer');
+    bl.classList.toggle('think-fast', state.thinkMode === 'fast');
+    bl.classList.toggle('think-deep', state.thinkMode === 'deep');
+    const mcs = bl.querySelectorAll('.mini-card');
+    mcs.forEach(mc => {
+      const res = mc.querySelector('.mc-result');
+      const op = mc.dataset.op;
+      const targetId = parseInt(mc.dataset.targetId);
+      const draggedId = parseInt(mc.dataset.draggedId);
+      if (state.thinkMode === 'fast') {
+        const pair = getBubblesForPair(draggedId, targetId);
+        const b = pair.find(p => p.op === op);
+        if (b) {
+          res.textContent = (state.rule === 'frac' && b.frac) ? b.frac : getCardLabel(b.result);
+        }
+      } else {
+        res.textContent = op;
+      }
+    });
+  }); });
+  document.getElementById('reset-btn').addEventListener('click', resetGame);
+  newGameBtn.addEventListener('click', newGame);
+  hintBtn.addEventListener('click', showHint);
+  document.getElementById('win-next-btn').addEventListener('click', newGame);
+  document.addEventListener('click', onBackgroundClick);
+  cardContainer.addEventListener('touchstart', onPointerDown, { passive: false });
+  cardContainer.addEventListener('touchmove', onPointerMove, { passive: false });
+  cardContainer.addEventListener('touchend', onPointerUp, { passive: false });
+  cardContainer.addEventListener('touchcancel', onPointerCancel, { passive: false });
+  cardContainer.addEventListener('mousedown', onPointerDown);
+  document.addEventListener('mousemove', onPointerMove);
+  document.addEventListener('mouseup', onPointerUp);
+  cardContainer.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  document.addEventListener('gesturechange', e => e.preventDefault());
+  document.addEventListener('gestureend', e => e.preventDefault());
+  let layoutTimer;
+  function relayout() { clearTimeout(layoutTimer); layoutTimer = setTimeout(() => { isDragging = false; isLockedMode = false; dragCardId = null; wasDragMoved = false; hideBubbles(); renderGame(false); }, 300); }
+  window.addEventListener('resize', relayout);
+  window.addEventListener('orientationchange', relayout);
+  newGame();
+}
+
+// === 心算链条 ===
+var _mc = { chain:[], step:0, total:0, correct:0, streak:0, timer:null, buf:"" };
+var MC_CFG = { steps:4, range:"easy", ops:"addsub", pace:"normal" };
+var PACE_MS = { normal:3000, fast:2000, rapid:1500 };
+var R_CFG = {easy:{sL:1,sH:10,mM:25,iM:10},medium:{sL:1,sH:20,mM:50,iM:15}};
+
+function mcGen(s,r,o){
+  var c=R_CFG[r]||R_CFG.easy;
+  var p=o==="addsub"?["+","-"]:o==="addsubmul"?["+","-","×"]:["+","-","×","÷"];
+  for(var a=0;a<500;a++){
+    var ch=[];var v=Math.floor(Math.random()*(c.sH-c.sL+1))+c.sL;ch.push(v);var ok=true;
+    var mm6=[2,3,4,5,6];
+    for(var i=0;i<s;i++){
+      var av=[];
+      for(var oi=0;oi<p.length;oi++){var op=p[oi];if(op==="+"&&v<c.mM)av.push("+");else if(op==="-"&&v>=2)av.push("-");else if(op==="×"&&Math.min(6,Math.floor(c.mM/v))>=2)av.push("×");else if(op==="÷"){for(var d=2;d<=Math.min(v,6);d++){if(v%d===0){av.push("÷");break;}}}}
+      if(av.length===0){ok=false;break;}
+      var ch2=av[Math.floor(Math.random()*av.length)];var n;
+      if(ch2==="+"){n=Math.floor(Math.random()*Math.min(c.mM-v,c.iM))+1;v+=n;}
+      else if(ch2==="-"){n=Math.floor(Math.random()*Math.min(v-1,c.iM))+1;v-=n;}
+      else if(ch2==="×"){n=Math.floor(Math.random()*(Math.min(6,Math.floor(c.mM/v))-1))+2;v*=n;}
+      else{var ds=[];for(var d=2;d<=Math.min(v,6);d++){if(v%d===0)ds.push(d);}n=ds[Math.floor(Math.random()*ds.length)];v=Math.floor(v/n);}
+      ch.push(ch2,n);
+    }
+    if(ok)return ch;
+  }
+  var ch=[];var v=Math.floor(Math.random()*10)+1;ch.push(v);
+  for(var i=0;i<s;i++){var op=i%2===0?"+":"-";n=Math.floor(Math.random()*5)+1;if(op==="+"){if(v+n>c.mM){n=c.mM-v;if(n<1)n=1;}v+=n;}else{n=Math.min(n,v-1);if(n<1)n=1;v-=n;}ch.push(op,n);}
+  return ch;
+}
+
+function mcRes(ch){var v=ch[0];for(var i=1;i<ch.length;i+=2){var op=ch[i],n=ch[i+1];if(op==="+")v+=n;else if(op==="-")v-=n;else if(op==="×")v*=n;else v=Math.floor(v/n);}return v;}
+
+function mcRecap(ch){var v=ch[0];var h='<span style=color:#60a5fa;font-weight:600>'+v+'</span>';for(var i=1;i<ch.length;i+=2){var op=ch[i],n=ch[i+1];var oc=op==='+'?'+':op==='-'?'−':op==='×'?'×':'÷';if(op==='+')v+=n;else if(op==='-')v-=n;else if(op==='×')v*=n;else v=Math.floor(v/n);h+=' <span style=color:rgba(255,255,255,.3)>→</span> <span style=color:rgba(255,255,255,.4)>'+oc+'</span><span style=color:#60a5fa;font-weight:600>'+n+'</span> <span style=color:rgba(255,255,255,.3)>=</span>'+(i+2>=ch.length?'<span style=color:#34d399;font-weight:700>'+v+'</span>':'<span style=color:#60a5fa>'+v+'</span>');}return h;}
+
+  _mc.total=0;_mc.correct=0;_mc.streak=0;_mc.buf="";
+  var rl={easy:"简单",medium:"中等",hard:"困难"};var ol={addsub:"加减",addsubmul:"加减乘",all:"加减乘除"};var pl={normal:"标准",fast:"快速",rapid:"极速"};
+}
+
+  _mc.chain=mcGen(MC_CFG.steps,MC_CFG.range,MC_CFG.ops);
+  _mc.step=0;_mc.buf="";
+  mcNextStep();
+}
+
+function mcNextStep(){
+  var c=_mc.chain;
+  if(_mc.step>=c.length){
+    return;
+  }
+  var v=c[_mc.step];
+  _mc.step+=2;
+  clearTimeout(_mc.timer);
+  _mc.timer=setTimeout(mcNextStep, PACE_MS[MC_CFG.pace]||2500);
+}
+
+function mcCheck(){
+  var ans=parseInt(_mc.buf);if(isNaN(ans))return;
+  var correct=mcRes(_mc.chain);var ok=(ans===correct);
+  _mc.total++;if(ok){_mc.correct++;_mc.streak++;}else _mc.streak=0;
+}
+
+function initMathchain(){
+  document.querySelectorAll("#mc-steps .mc-cfg").forEach(function(b){b.addEventListener("click",function(){document.querySelectorAll("#mc-steps .mc-cfg").forEach(function(x){x.classList.remove("active");});this.classList.add("active");MC_CFG.steps=parseInt(this.dataset.val);});});
+  document.querySelectorAll("#mc-range .mc-cfg").forEach(function(b){b.addEventListener("click",function(){document.querySelectorAll("#mc-range .mc-cfg").forEach(function(x){x.classList.remove("active");});this.classList.add("active");MC_CFG.range=this.dataset.val;});});
+  document.querySelectorAll("#mc-ops .mc-cfg").forEach(function(b){b.addEventListener("click",function(){document.querySelectorAll("#mc-ops .mc-cfg").forEach(function(x){x.classList.remove("active");});this.classList.add("active");MC_CFG.ops=this.dataset.val;});});
+  document.querySelectorAll("#mc-pace .mc-cfg").forEach(function(b){b.addEventListener("click",function(){document.querySelectorAll("#mc-pace .mc-cfg").forEach(function(x){x.classList.remove("active");});this.classList.add("active");MC_CFG.pace=this.dataset.val;});});
+}
+
+// === 用户系统 ===
+var _userInfo = null;
+function getUser() {
+  if (_userInfo) return _userInfo;
+  try {
+    var raw = localStorage.getItem('24point_user');
+    if (raw) { _userInfo = JSON.parse(raw); return _userInfo; }
+  } catch(e){}
+  return null;
+}
+function saveUser(name, grade) {
+  _userInfo = { name: name, grade: parseInt(grade)||0, deviceId: getDeviceId() };
+  try { localStorage.setItem('24point_user', JSON.stringify(_userInfo)); } catch(e){}
+}
+function getDeviceId() {
+  var d = localStorage.getItem('24point_device');
+  if (!d) { d = Date.now().toString(36)+Math.random().toString(36).slice(2,6); try { localStorage.setItem('24point_device', d); } catch(e){} }
+  return d;
+}
+
+function showUserModal(callback) {
+  var modal = document.getElementById('user-modal');
+  var nameEl = document.getElementById('um-name');
+  var gradeEl = document.getElementById('um-grade');
+  var confirmBtn = document.getElementById('um-confirm');
+  var skipBtn = document.getElementById('um-skip');
+  nameEl.value = ''; gradeEl.value = ''; confirmBtn.disabled = true;
+  function check(){ confirmBtn.disabled = !(nameEl.value.trim() && gradeEl.value); }
+  nameEl.oninput = check;
+  gradeEl.onchange = check;
+  modal.style.display = 'flex';
+  nameEl.focus();
+  confirmBtn.onclick = function(){
+    saveUser(nameEl.value.trim(), gradeEl.value);
+    modal.style.display = 'none';
+    if (callback) callback();
+  };
+  skipBtn.onclick = function(){
+    saveUser('游客' + getDeviceId().slice(-4), 0);
+    modal.style.display = 'none';
+    if (callback) callback();
+  };
+}
+
+function goToModeScreen() {
+  var u = getUser();
+  if (u) {
+  } else {
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function(){ 
+  // 如果已有用户信息，初始化时填入留言板
+  var u = getUser();
+  if (u) {
+    var ni = document.getElementById('win-fb-name');
+    if (ni) { ni.value = u.name; ni.readOnly = true; ni.style.color = 'rgba(255,255,255,.7)'; }
+  }
+});
+
+// === 给小王留言 反馈功能（模式选择页版）===
+(function(){'use strict';
+const SUPABASE_URL = 'https://pkxmsfyzcphzvuangrzs.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBreG1zZnl6Y3BoenZ1YW5ncnpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNDkxNzcsImV4cCI6MjA5NDYyNTE3N30.K1_niR4ZylqzbDPFnmTs5HRo2aEbObkGw3V9clM1czo';
+let loading = false;
+
+function escapeHtml(text){const d=document.createElement('div');d.appendChild(document.createTextNode(text));return d.innerHTML;}
+
+function loadMessages(){fetch(SUPABASE_URL+'/rest/v1/feedback?select=name,text,time&order=time.desc&limit=50&name=not.like.%5C_*',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}).then(r=>r.json()).then(msgs=>{msgsContainer.innerHTML='';if(!msgs||msgs.length===0){msgsContainer.appendChild(empty);return;}
+msgs.forEach(m=>{const el=document.createElement('div');el.className='win-msg';el.innerHTML='<div class="win-msg-name">'+escapeHtml(m.name)+'</div><div class="win-msg-text">'+escapeHtml(m.text)+'</div>';msgsContainer.appendChild(el);});}).catch(()=>{});}
+
+function setStatus(msg,ok){statusEl.textContent=msg;statusEl.style.color=ok?'rgba(52,211,153,.8)':'rgba(248,113,113,.8)';setTimeout(()=>{statusEl.textContent='';},3000);}
+
+function checkForm(){sendBtn.disabled=!(textInput.value.trim());}
+
+function sendMessage(){if(loading)return;const n=nameInput.value.trim();const t=textInput.value.trim();if(!n||!t)return;loading=true;sendBtn.disabled=true;sendBtn.textContent='发送中…';fetch(SUPABASE_URL+'/rest/v1/feedback',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({name:n,text:t,time:Date.now()})}).then(r=>{if(!r.ok)throw new Error('发送失败');setStatus('✓ 已发送，谢谢你 💛',true);nameInput.value='';textInput.value='';checkForm();loadMessages();}).catch(e=>{setStatus('✗ '+e.message,false);}).finally(()=>{loading=false;sendBtn.disabled=false;sendBtn.textContent='📮 发送';});}
+
+btn.addEventListener('click',function(){modal.style.display='flex';loadMessages();});
+cancelBtn.addEventListener('click',function(){modal.style.display='none';});
+modal.addEventListener('click',function(e){if(e.target===modal)modal.style.display='none';});
+textInput.addEventListener('input',checkForm);
+sendBtn.addEventListener('click',sendMessage);
+textInput.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(!sendBtn.disabled)sendMessage();}});
+
+  var u = getUser();
+  if (u && nameInput) { nameInput.value = u.name; nameInput.readOnly = true; nameInput.style.color = 'rgba(255,255,255,.7)'; }
+})();
+</script>
+
+<script>
+// 退出按钮 → 返回大厅
+document.addEventListener('DOMContentLoaded', function() {
+  var exitBtn = document.getElementById('exit-btn');
+  if(exitBtn) {
+    exitBtn.addEventListener('click', function(){ window.location.href = '/'; });
+  }
+});
+</script>
+</body>
+</html>
