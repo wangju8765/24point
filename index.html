@@ -150,6 +150,13 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 #user-modal .um-btn:disabled{opacity:.4;cursor:default}
 #user-modal .um-skip{background:transparent;border:none;color:rgba(255,255,255,.3);font-size:12px;margin-top:10px;cursor:pointer;font-family:inherit}
 
+/* 心算链条 */
+.mc-cfg{padding:7px 0;border:1px solid rgba(255,255,255,.08);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.04);color:rgba(255,255,255,.35);flex:1;text-align:center;transition:all .2s;font-family:inherit}
+.mc-cfg:active{transform:scale(.95)}
+.mc-cfg.active{background:#10b981;color:#fff;border-color:#10b981;box-shadow:0 2px 8px rgba(16,185,129,.35)}
+.mc-np{flex:1;padding:13px 0;border:none;border-radius:12px;font-size:22px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.06);color:#fff;transition:all .1s;text-align:center;font-family:inherit}
+.mc-np:active{transform:scale(.93);background:rgba(255,255,255,.12)}
+
 /* Feedback Button & Modal */
 /* Win Modal Feedback */
 #win-fb-divider{border:none;border-top:1px solid rgba(255,255,255,.08);margin:14px 0 10px}
@@ -242,6 +249,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 
 <div id="mode-screen">
   <button class="btn-start-game" id="mode-free">🎮 自由练习</button>
+  <button class="btn-secondary" id="mode-mathchain">🧮 心算链条</button>
   <button class="btn-secondary" id="mode-rules">📖 规则说明</button>
 </div>
 
@@ -272,6 +280,75 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
       <div class="s-rule-desc">用4张牌通过加减乘除算出24，每张牌用1次</div>
     </div>
     <button class="rules-back" id="rules-back-btn">← 返回</button>
+  </div>
+</div>
+
+<!-- 心算链条 -->
+<div id="mc-container" style="display:none;position:fixed;inset:0;z-index:350;background:#0f0f1a">
+  <div id="mc-start-screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;overflow-y:auto;padding:20px 16px;gap:6px;max-width:420px;margin:0 auto">
+    <div style="font-size:28px;font-weight:800;background:linear-gradient(135deg,#60a5fa,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center">💭 心算链条</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.3);text-align:center">在脑中保持每一步的结果</div>
+    <div style="background:rgba(255,255,255,.04);border-radius:12px;padding:12px 14px;width:100%;line-height:1.6">
+      <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:1px;margin-bottom:3px">🎯 玩法</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.5)">1. 屏幕会逐一显示一个操作链</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.5)">2. 用心算记住每一步的中间结果</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.5)">3. 全部显示完后输入最终答案</div>
+    </div>
+    <div style="width:100%">
+      <div style="font-size:11px;font-weight:700;color:rgba(16,185,129,.7);margin-bottom:4px">🧮 步数</div>
+      <div id="mc-steps" style="display:flex;gap:5px">
+        <button class="mc-cfg active" data-val="4">4步</button>
+        <button class="mc-cfg" data-val="5">5步</button>
+        <button class="mc-cfg" data-val="6">6步</button>
+      </div>
+    </div>
+    <div style="width:100%">
+      <div style="font-size:11px;font-weight:700;color:rgba(245,158,11,.7);margin-bottom:4px">🔢 数字</div>
+      <div id="mc-range" style="display:flex;gap:5px">
+        <button class="mc-cfg active" data-val="easy">简单</button>
+        <button class="mc-cfg" data-val="medium">中等</button>
+        <button class="mc-cfg" data-val="hard">困难</button>
+      </div>
+    </div>
+    <button id="mc-btn-start" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:14px;padding:12px 0;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:3px;width:100%;margin-top:8px">开始</button>
+    <button id="mc-btn-return" style="background:rgba(255,255,255,.07);color:rgba(255,255,255,.45);border:none;border-radius:10px;padding:9px;font-size:12px;font-weight:600;cursor:pointer;width:100%;margin:4px 0 0">← 返回</button>
+  </div>
+  <div id="mc-game" style="display:none;flex-direction:column;width:100%;height:100%;max-width:420px;margin:0 auto">
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 16px 6px;flex-shrink:0">
+      <span id="mc-round" style="font-size:12px;font-weight:700;color:#60a5fa">第 1 题</span>
+      <span id="mc-config" style="font-size:10px;color:rgba(255,255,255,.25);margin-left:auto"></span>
+      <span id="mc-score" style="font-size:11px;color:rgba(255,255,255,.3)">0/0</span>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">
+      <div id="mc-card" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:24px;padding:32px 44px;display:flex;flex-direction:column;align-items:center;gap:4px">
+        <div id="mc-display" style="font-size:52px;font-weight:800;letter-spacing:4px;min-height:68px;display:flex;align-items:center;justify-content:center">8</div>
+        <div id="mc-sub" style="font-size:14px;color:rgba(255,255,255,.3);min-height:20px">记住这个数字</div>
+      </div>
+    </div>
+    <div id="mc-progress" style="width:100%;height:6px;display:flex;gap:2px;padding:2px 16px"></div>
+    <div id="mc-numpad" style="padding:6px 16px 16px;display:none">
+      <div id="mc-input" style="height:44px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:#60a5fa;margin-bottom:6px"></div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:6px"><button class="mc-np" data-d="1">1</button><button class="mc-np" data-d="2">2</button><button class="mc-np" data-d="3">3</button></div>
+        <div style="display:flex;gap:6px"><button class="mc-np" data-d="4">4</button><button class="mc-np" data-d="5">5</button><button class="mc-np" data-d="6">6</button></div>
+        <div style="display:flex;gap:6px"><button class="mc-np" data-d="7">7</button><button class="mc-np" data-d="8">8</button><button class="mc-np" data-d="9">9</button></div>
+        <div style="display:flex;gap:6px"><button id="mc-clear" style="background:rgba(255,255,255,.04);color:rgba(255,255,255,.35);font-size:15px">C</button><button class="mc-np" data-d="0">0</button><button id="mc-back" style="background:rgba(255,255,255,.04);color:rgba(255,255,255,.35);font-size:15px">⌫</button></div>
+        <div style="display:flex;gap:6px"><button id="mc-confirm" style="background:#3b82f6;color:#fff;font-size:15px;letter-spacing:2px;padding:12px 0;flex:1" disabled>✓ 确认</button></div>
+      </div>
+    </div>
+  </div>
+  <div id="mc-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);align-items:center;justify-content:center;z-index:200">
+    <div style="background:linear-gradient(145deg,#1e1e3a,#15152a);border-radius:24px;padding:28px 24px;text-align:center;max-width:320px;width:90%">
+      <div id="mc-ricon" style="font-size:48px;margin-bottom:2px">🎉</div>
+      <div id="mc-rtitle" style="font-size:22px;font-weight:800;margin-bottom:8px">✅ 恭喜答对了</div>
+      <div id="mc-rcap" style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.8;padding:6px 0"></div>
+      <div id="mc-rstreak" style="font-size:14px;color:#fbbf24;font-weight:600;padding:2px 0;display:none"></div>
+      <div id="mc-rstats" style="font-size:12px;color:rgba(255,255,255,.3);margin-bottom:6px"></div>
+      <div style="display:flex;gap:10px;margin-top:10px">
+        <button id="mc-modal-back" style="flex:1;padding:12px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);border:none;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer">← 返回</button>
+        <button id="mc-modal-continue" style="flex:1;padding:12px;background:#f59e0b;color:#1a1a2e;border:none;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer">继续 →</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -913,6 +990,105 @@ function init() {
   newGame();
 }
 
+// === 心算链条 ===
+var _mc = { chain:[], step:0, total:0, correct:0, streak:0, timer:null, buf:"" };
+var MC_CFG = { steps:4, range:"easy", ops:"addsub" };
+var R_CFG = {easy:{sL:1,sH:10,mM:25,iM:10},medium:{sL:1,sH:20,mM:50,iM:15}};
+
+function mcGen(s,r,o){
+  var c=R_CFG[r]||R_CFG.easy;
+  var p=o==="addsub"?["+","-"]:o==="addsubmul"?["+","-","×"]:["+","-","×","÷"];
+  for(var a=0;a<500;a++){
+    var ch=[];var v=Math.floor(Math.random()*(c.sH-c.sL+1))+c.sL;ch.push(v);var ok=true;
+    var mm6=[2,3,4,5,6];
+    for(var i=0;i<s;i++){
+      var av=[];
+      for(var oi=0;oi<p.length;oi++){var op=p[oi];if(op==="+"&&v<c.mM)av.push("+");else if(op==="-"&&v>=2)av.push("-");else if(op==="×"&&Math.min(6,Math.floor(c.mM/v))>=2)av.push("×");else if(op==="÷"){for(var d=2;d<=Math.min(v,6);d++){if(v%d===0){av.push("÷");break;}}}}
+      if(av.length===0){ok=false;break;}
+      var ch2=av[Math.floor(Math.random()*av.length)];var n;
+      if(ch2==="+"){n=Math.floor(Math.random()*Math.min(c.mM-v,c.iM))+1;v+=n;}
+      else if(ch2==="-"){n=Math.floor(Math.random()*Math.min(v-1,c.iM))+1;v-=n;}
+      else if(ch2==="×"){n=Math.floor(Math.random()*(Math.min(6,Math.floor(c.mM/v))-1))+2;v*=n;}
+      else{var ds=[];for(var d=2;d<=Math.min(v,6);d++){if(v%d===0)ds.push(d);}n=ds[Math.floor(Math.random()*ds.length)];v=Math.floor(v/n);}
+      ch.push(ch2,n);
+    }
+    if(ok)return ch;
+  }
+  var ch=[];var v=Math.floor(Math.random()*10)+1;ch.push(v);
+  for(var i=0;i<s;i++){var op=i%2===0?"+":"-";n=Math.floor(Math.random()*5)+1;if(op==="+"){if(v+n>c.mM){n=c.mM-v;if(n<1)n=1;}v+=n;}else{n=Math.min(n,v-1);if(n<1)n=1;v-=n;}ch.push(op,n);}
+  return ch;
+}
+
+function mcRes(ch){var v=ch[0];for(var i=1;i<ch.length;i+=2){var op=ch[i],n=ch[i+1];if(op==="+")v+=n;else if(op==="-")v-=n;else if(op==="×")v*=n;else v=Math.floor(v/n);}return v;}
+
+function mcRecap(ch){var v=ch[0];var h='<span style=color:#60a5fa;font-weight:600>'+v+'</span>';for(var i=1;i<ch.length;i+=2){var op=ch[i],n=ch[i+1];var oc=op==='+'?'+':op==='-'?'−':op==='×'?'×':'÷';if(op==='+')v+=n;else if(op==='-')v-=n;else if(op==='×')v*=n;else v=Math.floor(v/n);h+=' <span style=color:rgba(255,255,255,.3)>→</span> <span style=color:rgba(255,255,255,.4)>'+oc+'</span><span style=color:#60a5fa;font-weight:600>'+n+'</span> <span style=color:rgba(255,255,255,.3)>=</span>'+(i+2>=ch.length?'<span style=color:#34d399;font-weight:700>'+v+'</span>':'<span style=color:#60a5fa>'+v+'</span>');}return h;}
+
+function mcStart(){
+  _mc.total=0;_mc.correct=0;_mc.streak=0;_mc.buf="";
+  document.getElementById("mc-start-screen").style.display="none";
+  document.getElementById("mc-game").style.display="flex";
+  document.getElementById("mc-card").style.transform="";
+  document.getElementById("mc-score").textContent="0/0";
+  var rl={easy:"简单",medium:"中等",hard:"困难"};var ol={addsub:"加减",addsubmul:"加减乘",all:"加减乘除"};
+  document.getElementById("mc-config").textContent=MC_CFG.steps+"步 · "+(rl[MC_CFG.range]||"简单")+" · "+(ol[MC_CFG.ops]||"加减");
+  mcRun();
+}
+
+function mcRun(){
+  _mc.chain=mcGen(MC_CFG.steps,MC_CFG.range,MC_CFG.ops);
+  _mc.step=0;_mc.buf="";
+  document.getElementById("mc-round").textContent="第 "+(_mc.total+1)+" 题";
+  document.getElementById("mc-numpad").style.display="none";
+  document.getElementById("mc-card").style.transform="";
+  document.getElementById("mc-input").textContent="";
+  document.getElementById("mc-progress").innerHTML="";
+  document.getElementById("mc-confirm").disabled=true;
+  mcNextStep();
+}
+
+function mcNextStep(){
+  var c=_mc.chain;
+  if(_mc.step>=c.length){
+    document.getElementById("mc-display").textContent="?";
+    document.getElementById("mc-sub").textContent="答案是多少？";
+    document.getElementById("mc-numpad").style.display="block";
+    document.getElementById("mc-card").style.transform="translateY(-12px)";
+    return;
+  }
+  var v=c[_mc.step];
+  if(_mc.step===0){document.getElementById("mc-display").innerHTML="<span style='color:#60a5fa'>"+v+"</span>";document.getElementById("mc-sub").textContent="记住这个数字";}
+  else{var op=c[_mc.step-1];var oc=op==="+"?"+":op==="-"?"-":op==="×"?"×":"÷";document.getElementById("mc-display").innerHTML="<span style='color:rgba(255,255,255,.6)'>"+oc+"</span><span style='color:#60a5fa'>"+v+"</span>";document.getElementById("mc-sub").textContent="心算结果...";}
+  _mc.step+=2;
+  clearTimeout(_mc.timer);
+  _mc.timer=setTimeout(mcNextStep, 2500);
+}
+
+function mcCheck(){
+  var ans=parseInt(_mc.buf);if(isNaN(ans))return;
+  var correct=mcRes(_mc.chain);var ok=(ans===correct);
+  _mc.total++;if(ok){_mc.correct++;_mc.streak++;}else _mc.streak=0;
+  document.getElementById("mc-score").textContent=_mc.correct+"/"+_mc.total;
+  document.getElementById("mc-ricon").textContent=ok?"🎉":"😅";
+  document.getElementById("mc-rtitle").textContent=ok?"✅ 恭喜答对了":"❌ 还差一点点";
+  document.getElementById("mc-rcap").innerHTML="操作链：<br>"+mcRecap(_mc.chain);
+  if(ok&&_mc.streak>=2){document.getElementById("mc-rstreak").style.display="block";document.getElementById("mc-rstreak").textContent="🔥 连续答对 "+_mc.streak+" 题";}else document.getElementById("mc-rstreak").style.display="none";
+  document.getElementById("mc-rstats").textContent="正确 "+_mc.correct+" 题，共 "+_mc.total+" 题";
+  document.getElementById("mc-modal").style.display="flex";
+}
+
+function initMathchain(){
+  document.querySelectorAll("#mc-steps .mc-cfg").forEach(function(b){b.addEventListener("click",function(){document.querySelectorAll("#mc-steps .mc-cfg").forEach(function(x){x.classList.remove("active");});this.classList.add("active");MC_CFG.steps=parseInt(this.dataset.val);});});
+  document.querySelectorAll("#mc-range .mc-cfg").forEach(function(b){b.addEventListener("click",function(){document.querySelectorAll("#mc-range .mc-cfg").forEach(function(x){x.classList.remove("active");});this.classList.add("active");MC_CFG.range=this.dataset.val;});});
+  document.querySelectorAll(".mc-np").forEach(function(b){b.addEventListener("click",function(){_mc.buf+=this.dataset.d;document.getElementById("mc-input").textContent=_mc.buf;document.getElementById("mc-confirm").disabled=false;});});
+  document.getElementById("mc-clear").addEventListener("click",function(){_mc.buf="";document.getElementById("mc-input").textContent="";document.getElementById("mc-confirm").disabled=true;});
+  document.getElementById("mc-back").addEventListener("click",function(){_mc.buf=_mc.buf.slice(0,-1);document.getElementById("mc-input").textContent=_mc.buf;document.getElementById("mc-confirm").disabled=_mc.buf.length===0;});
+  document.getElementById("mc-confirm").addEventListener("click",mcCheck);
+  document.getElementById("mc-btn-start").addEventListener("click",mcStart);
+  document.getElementById("mc-btn-return").addEventListener("click",function(){document.getElementById("mc-container").style.display="none"; document.getElementById("mode-screen").style.display="flex"; });
+  document.getElementById("mc-modal-continue").addEventListener("click",function(){document.getElementById("mc-modal").style.display="none";document.getElementById("mc-card").style.transform="";mcRun();});
+  document.getElementById("mc-modal-back").addEventListener("click",function(){document.getElementById("mc-modal").style.display="none";document.getElementById("mc-game").style.display="none";document.getElementById("mc-start-screen").style.display="flex";document.getElementById("mc-container").style.display="none"; document.getElementById("mode-screen").style.display="flex"; });
+}
+
 // === 用户系统 ===
 var _userInfo = null;
 function getUser() {
@@ -969,6 +1145,7 @@ function goToModeScreen() {
 
 document.addEventListener('DOMContentLoaded', function(){ 
   document.getElementById('start-btn').addEventListener('click', goToModeScreen);
+  document.getElementById('mode-mathchain').addEventListener('click',function(){document.getElementById('mode-screen').style.display='none'; document.getElementById('mc-container').style.display='block'; });
   document.getElementById('mode-free').addEventListener('click',function(){document.getElementById('mode-screen').style.display='none'; init(); });
   document.getElementById('mode-rules').addEventListener('click',function(){document.getElementById('mode-screen').style.display='none'; document.getElementById('rules-screen').style.display='flex'; });
   document.getElementById('rules-back-btn').addEventListener('click',function(){document.getElementById('rules-screen').style.display='none'; document.getElementById('mode-screen').style.display='flex'; });
