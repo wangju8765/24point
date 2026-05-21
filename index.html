@@ -26,7 +26,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 .mode-btn.active{background:#f59e0b;color:#1a1a2e;box-shadow:0 2px 8px rgba(245,158,11,.35)}
 .rule-btn.active{background:#818cf8;color:#1a1a2e;box-shadow:0 2px 8px rgba(129,140,248,.35)}
 #game-area{flex:1;position:relative;overflow:hidden;touch-action:none}
-#card-container{position:absolute;inset:0}
+#card-container{position:absolute;inset:0;overflow:hidden}
 .card{position:absolute;width:90px;height:125px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab;transition:box-shadow .2s,transform .15s;will-change:transform;touch-action:none}
 .card-inner{width:100%;height:100%;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.15)}
 .card-value{font-size:42px;font-weight:800;line-height:1;letter-spacing:-1px}
@@ -470,7 +470,7 @@ const toast = document.getElementById('toast');
 // Constants
 const TARGET = 24, CARD_W = 90, CARD_H = 125;
 const PROXIMITY_THRESHOLD = 150, FULL_OPACITY_DISTANCE = 50, MERGE_DROP_THRESHOLD = 50, COLORS = 4;
-const CARD_Y_OFFSET = 80;
+const CARD_Y_OFFSET = 160;
 
 // Timer
 let gameStartTime = 0, timerInterval = null;
