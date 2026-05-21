@@ -159,9 +159,32 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 
 /* Feedback Button & Modal */
 /* Win Modal Feedback */
+#win-fb-divider{border:none;border-top:1px solid rgba(255,255,255,.08);margin:14px 0 10px}
+#win-fb-btn{background:rgba(99,102,241,.25);border:1px solid rgba(99,102,241,.4);border-radius:10px;padding:10px 0;font-size:14px;font-weight:600;color:#e0e7ff;cursor:pointer;transition:all .2s;width:100%;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 2px 8px rgba(99,102,241,.15)}
+#win-fb-btn:hover{background:rgba(99,102,241,.4);border-color:rgba(129,140,248,.6);color:#fff;box-shadow:0 4px 16px rgba(99,102,241,.25)}
+#win-fb-btn:active{transform:scale(.97)}
+#win-fb-form{display:none;margin-top:10px;flex-direction:column;gap:7px}
+#win-fb-form.open{display:flex}
+#win-fb-form input,#win-fb-form textarea{border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:9px 12px;font-size:13px;background:rgba(255,255,255,.08);color:#f0f0f0;outline:none;transition:border-color .2s;font-family:inherit}
+#win-fb-form input::placeholder,#win-fb-form textarea::placeholder{color:rgba(255,255,255,.4)}
+#win-fb-form input:focus,#win-fb-form textarea:focus{border-color:rgba(129,140,248,.6);background:rgba(255,255,255,.1)}
+#win-fb-form textarea{resize:none;height:46px}
+#win-fb-form .fb-row{display:flex;gap:8px}
+#win-fb-form .fb-row button{border:none;border-radius:10px;padding:8px 0;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;flex:1}
+#win-fb-form .fb-row button:active{transform:scale(.95)}
+#win-fb-send{background:rgba(99,102,241,1);color:#fff;box-shadow:0 2px 8px rgba(99,102,241,.3)}
+#win-fb-send:hover{background:rgba(129,140,248,1);box-shadow:0 4px 16px rgba(99,102,241,.4)}
+#win-fb-send:disabled{opacity:.4;cursor:default}
+#win-fb-cancel{background:rgba(255,255,255,.1);color:rgba(255,255,255,.65)}
+#win-fb-cancel:hover{background:rgba(255,255,255,.15);color:#fff}
+#win-fb-status{font-size:12px;color:rgba(255,255,255,.5);text-align:center;min-height:18px;line-height:18px}
+#win-msgs{display:flex;flex-direction:column;gap:5px;max-height:120px;overflow-y:auto;margin-bottom:8px;padding-right:3px}
+#win-msgs::-webkit-scrollbar{width:3px}
+#win-msgs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px}
 .win-msg{background:rgba(255,255,255,.06);border-radius:8px;padding:7px 10px;flex-shrink:0}
 .win-msg-name{font-size:11px;font-weight:600;color:rgba(255,255,255,.55);margin-bottom:2px}
 .win-msg-text{font-size:13px;color:rgba(255,255,255,.85);line-height:1.3;word-break:break-word}
+#win-fb-empty{font-size:13px;color:rgba(255,255,255,.3);text-align:center;padding:10px 0}
 </style>
 </head>
 <body>
@@ -210,24 +233,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
   <button class="btn-start-game" id="mode-free">🎮 自由练习</button>
   <button class="btn-start-game" id="mode-mathchain">🧠 心算链条</button>
   <button class="btn-secondary" id="mode-rules">📖 规则说明</button>
-  <button class="btn-secondary" id="mode-fb-btn" style="background:rgba(99,102,241,.2);border:1px solid rgba(99,102,241,.3);color:#c7d2fe;margin-top:10px">💬 给小王留言</button>
-</div>
-
-<div id="mode-fb-form" style="display:none;position:fixed;inset:0;z-index:450;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);align-items:center;justify-content:center">
-  <div style="background:linear-gradient(145deg,#1e1e3a,#15152a);border-radius:24px;padding:24px 20px;max-width:340px;width:90%;text-align:center;max-height:80vh;overflow-y:auto">
-    <div style="font-size:16px;font-weight:700;margin-bottom:4px;color:#e0e7ff">给小王老师留言 💬</div>
-    <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:12px">你的建议会帮助游戏变得更好</div>
-    <div id="mode-msgs" style="display:flex;flex-direction:column;gap:5px;max-height:100px;overflow-y:auto;margin-bottom:10px;padding-right:3px">
-      <div id="mode-fb-empty" style="font-size:13px;color:rgba(255,255,255,.3);text-align:center;padding:10px 0">还没有留言，快来第一条吧 ✍️</div>
-    </div>
-    <input type="text" id="mode-fb-name" placeholder="你的名字" maxlength="20" style="width:100%;padding:9px 12px;border:1px solid rgba(255,255,255,.15);border-radius:10px;font-size:13px;background:rgba(255,255,255,.08);color:#f0f0f0;outline:none;margin-bottom:6px">
-    <textarea id="mode-fb-text" placeholder="对游戏有什么意见..." maxlength="200" style="width:100%;padding:9px 12px;border:1px solid rgba(255,255,255,.15);border-radius:10px;font-size:13px;background:rgba(255,255,255,.08);color:#f0f0f0;outline:none;resize:none;height:46px;margin-bottom:8px"></textarea>
-    <div style="display:flex;gap:8px">
-      <button id="mode-fb-cancel" style="flex:1;padding:8px 0;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.1);color:rgba(255,255,255,.65)">关闭</button>
-      <button id="mode-fb-send" disabled style="flex:1;padding:8px 0;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;background:rgba(99,102,241,1);color:#fff;box-shadow:0 2px 8px rgba(99,102,241,.3)">📮 发送</button>
-    </div>
-    <div id="mode-fb-status" style="font-size:12px;color:rgba(255,255,255,.5);text-align:center;min-height:18px;line-height:18px;margin-top:4px"></div>
-  </div>
 </div>
 
 <div id="rules-screen">
@@ -386,7 +391,18 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
       <button class="modal-btn-secondary" onclick="closeModal('win-modal'); state.gameOver = false;">继续回顾</button>
       <button class="modal-btn-primary" id="win-next-btn">下一题 →</button>
     </div>
-
+    <hr id="win-fb-divider">
+    <button id="win-fb-btn">💬 给小王留言</button>
+    <div id="win-fb-form">
+      <div id="win-msgs"><div id="win-fb-empty">还没有留言，快来第一条吧 ✍️</div></div>
+      <input type="text" id="win-fb-name" placeholder="你的名字（必填）" maxlength="20">
+      <textarea id="win-fb-text" placeholder="对游戏有什么意见..." maxlength="200"></textarea>
+      <div class="fb-row">
+        <button id="win-fb-cancel">收起</button>
+        <button id="win-fb-send" disabled>📮 发送</button>
+      </div>
+      <div id="win-fb-status"></div>
+    </div>
   </div>
 </div>
 <div class="modal-overlay" id="hint-modal">
@@ -867,12 +883,227 @@ function doUpload(solved) {
   _freeEventLog = []; _freePuzzle = null;
 }
 
+function checkGameState() {
+  if (state.cards.length === 1 && Math.abs(state.cards[0].value - 24) < 1e-4) {
+    state.gameOver = true; stopTimer(); Sound.win();
+    document.getElementById('win-time-big').textContent = formatTimeNear(getElapsedSeconds());
+    doUpload(true);
+    setTimeout(() => winModal.classList.add('show'), 500);
+  }
+}
 
+function undo() {
+  if (state.history.length === 0) return;
+  closeModal('win-modal'); state.gameOver = false;
+  const p = state.history.pop(); state.cards = p; state.steps = Math.max(0, state.steps - 1);
+  hideBubbles(); renderGame(true); updateStatus();
+}
 
-// === 给小王留言 反馈功能（模式选择页版）===
-(function(){'use strict';
+function resetGame() {
+  if (!state.initialPuzzle) { newGame(); return; }
+  closeModal('win-modal'); closeModal('hint-modal');
+  for (const k in mergeParents) delete mergeParents[k];
+  state.history = []; state.steps = 0; state.gameOver = false;
+  state.draggedCard = null; state.targetCard = null; state.lockedCard = null; hideBubbles();
+  const rect = cardContainer.getBoundingClientRect();
+  const cw = rect.width || 340, ch = rect.height || 450;
+  const pos = computeCardPositions(4, CARD_W, CARD_H, cw, ch);
+  startTimer();
+  state.cards = state.initialPuzzle.map((v, i) => ({ id: state.nextId++, value: v, history: '', x: pos[i].x, y: pos[i].y, colorIdx: i, entering: true }));
+  renderGame(true); updateStatus();
+}
+
+function showHint() {
+  if (state.cards.length < 2) return;
+  for (let i = 0; i < state.cards.length; i++) for (let j = i + 1; j < state.cards.length; j++) {
+    const a = state.cards[i].value, b = state.cards[j].value;
+    const rem = state.cards.filter((_,k) => k !== i && k !== j).map(c => c.value);
+    const ops = [{op:'加',r:a+b},{op:'乘',r:a*b},{op:'减',r:Math.max(a,b)-Math.min(a,b)}];
+    const mn = Math.min(a,b), mx = Math.max(a,b);
+    if (mn && (state.rule === 'frac' || mx % mn === 0)) ops.push({op:'除',r:mx/mn});
+    for (const to of ops) {
+      const s = state.rule === 'int' ? canSolveInt : canSolveFrac;
+      if (s([...rem, to.r])) { document.getElementById('hint-text').innerHTML = '\u8bd5\u8bd5\u628a <strong>' + getCardLabel(a) + '</strong> \u62d6\u5230 <strong>' + getCardLabel(b) + '</strong> \u4e0a\uff0c\u7528 <strong>' + to.op + '</strong> \ud83d\udc46'; hintModal.classList.add('show'); return; }
+    }
+  }
+  document.getElementById('hint-text').textContent = '\u8fd9\u9053\u9898\u662f\u6709\u89e3\u7684\uff0c\u591a\u8bd5\u8bd5\u4e0d\u540c\u7684\u7ec4\u5408\u65b9\u5f0f\u5427\uff01';
+  hintModal.classList.add('show');
+}
+
+function newGame() {
+  closeModal('win-modal'); closeModal('hint-modal');
+  for (const k in mergeParents) delete mergeParents[k];
+  state.history = []; state.steps = 0; state.gameOver = false;
+  state.draggedCard = null; state.targetCard = null; state.lockedCard = null; hideBubbles();
+  const nums = generateNumbers(state.mode, state.rule);
+  const rect = cardContainer.getBoundingClientRect();
+  const cw = rect.width || 340, ch = rect.height || 450;
+  const pos = computeCardPositions(4, CARD_W, CARD_H, cw, ch);
+  startTimer(); state.initialPuzzle = [...nums];
+  state.cards = nums.map((v, i) => ({ id: state.nextId++, value: v, history: '', x: pos[i].x, y: pos[i].y, colorIdx: i, entering: true }));
+  renderGame(true); updateStatus();
+  // 数据收集：开始新一局
+  _freeEventLog = []; _freePuzzle = [...nums]; _freeStartTime = Date.now();
+  _freeLog('problem_numbers', { numbers: nums });
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+let toastTimer = null;
+function showToast(msg) { toast.textContent = msg; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), 1500); }
+
+function init() {
+  document.querySelectorAll('.mode-btn').forEach(btn => { btn.addEventListener('click', () => { document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); state.mode = btn.dataset.mode; newGame(); }); });
+  document.querySelectorAll('.rule-btn').forEach(btn => { btn.addEventListener('click', () => { document.querySelectorAll('.rule-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); state.rule = btn.dataset.rule; newGame(); }); });
+  document.querySelectorAll('.think-btn').forEach(btn => { btn.addEventListener('click', () => {
+    document.querySelectorAll('.think-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.thinkMode = btn.dataset.think;
+    const bl = document.getElementById('bubble-layer');
+    bl.classList.toggle('think-fast', state.thinkMode === 'fast');
+    bl.classList.toggle('think-deep', state.thinkMode === 'deep');
+    const mcs = bl.querySelectorAll('.mini-card');
+    mcs.forEach(mc => {
+      const res = mc.querySelector('.mc-result');
+      const op = mc.dataset.op;
+      const targetId = parseInt(mc.dataset.targetId);
+      const draggedId = parseInt(mc.dataset.draggedId);
+      if (state.thinkMode === 'fast') {
+        const pair = getBubblesForPair(draggedId, targetId);
+        const b = pair.find(p => p.op === op);
+        if (b) {
+          res.textContent = (state.rule === 'frac' && b.frac) ? b.frac : getCardLabel(b.result);
+        }
+      } else {
+        res.textContent = op;
+      }
+    });
+  }); });
+  document.getElementById('reset-btn').addEventListener('click', resetGame);
+  newGameBtn.addEventListener('click', newGame);
+  hintBtn.addEventListener('click', showHint);
+  document.getElementById('win-next-btn').addEventListener('click', newGame);
+  document.addEventListener('click', onBackgroundClick);
+  cardContainer.addEventListener('touchstart', onPointerDown, { passive: false });
+  cardContainer.addEventListener('touchmove', onPointerMove, { passive: false });
+  cardContainer.addEventListener('touchend', onPointerUp, { passive: false });
+  cardContainer.addEventListener('touchcancel', onPointerCancel, { passive: false });
+  cardContainer.addEventListener('mousedown', onPointerDown);
+  document.addEventListener('mousemove', onPointerMove);
+  document.addEventListener('mouseup', onPointerUp);
+  cardContainer.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  document.addEventListener('gesturechange', e => e.preventDefault());
+  document.addEventListener('gestureend', e => e.preventDefault());
+  let layoutTimer;
+  function relayout() { clearTimeout(layoutTimer); layoutTimer = setTimeout(() => { isDragging = false; isLockedMode = false; dragCardId = null; wasDragMoved = false; hideBubbles(); renderGame(false); }, 300); }
+  window.addEventListener('resize', relayout);
+  window.addEventListener('orientationchange', relayout);
+  newGame();
+}
+
+// === 心算链条 ===
+var _mc = { chain:[], step:0, total:0, correct:0, streak:0, timer:null, buf:"" };
+var MC_CFG = { steps:4, range:"easy", ops:"addsub", pace:"normal" };
+var PACE_MS = { normal:3000, fast:2000, rapid:1500 };
+var R_CFG = {easy:{sL:1,sH:10,mM:25,iM:10},medium:{sL:1,sH:20,mM:50,iM:15}};
+
+function mcGen(s,r,o){
+  var c=R_CFG[r]||R_CFG.easy;
+  var p=o==="addsub"?["+","-"]:o==="addsubmul"?["+","-","×"]:["+","-","×","÷"];
+  for(var a=0;a<500;a++){
+    var ch=[];var v=Math.floor(Math.random()*(c.sH-c.sL+1))+c.sL;ch.push(v);var ok=true;
+    var mm6=[2,3,4,5,6];
+    for(var i=0;i<s;i++){
+      var av=[];
+      for(var oi=0;oi<p.length;oi++){var op=p[oi];if(op==="+"&&v<c.mM)av.push("+");else if(op==="-"&&v>=2)av.push("-");else if(op==="×"&&Math.min(6,Math.floor(c.mM/v))>=2)av.push("×");else if(op==="÷"){for(var d=2;d<=Math.min(v,6);d++){if(v%d===0){av.push("÷");break;}}}}
+      if(av.length===0){ok=false;break;}
+      var ch2=av[Math.floor(Math.random()*av.length)];var n;
+      if(ch2==="+"){n=Math.floor(Math.random()*Math.min(c.mM-v,c.iM))+1;v+=n;}
+      else if(ch2==="-"){n=Math.floor(Math.random()*Math.min(v-1,c.iM))+1;v-=n;}
+      else if(ch2==="×"){n=Math.floor(Math.random()*(Math.min(6,Math.floor(c.mM/v))-1))+2;v*=n;}
+      else{var ds=[];for(var d=2;d<=Math.min(v,6);d++){if(v%d===0)ds.push(d);}n=ds[Math.floor(Math.random()*ds.length)];v=Math.floor(v/n);}
+      ch.push(ch2,n);
+    }
+    if(ok)return ch;
+  }
+  var ch=[];var v=Math.floor(Math.random()*10)+1;ch.push(v);
+  for(var i=0;i<s;i++){var op=i%2===0?"+":"-";n=Math.floor(Math.random()*5)+1;if(op==="+"){if(v+n>c.mM){n=c.mM-v;if(n<1)n=1;}v+=n;}else{n=Math.min(n,v-1);if(n<1)n=1;v-=n;}ch.push(op,n);}
+  return ch;
+}
+
+function mcRes(ch){var v=ch[0];for(var i=1;i<ch.length;i+=2){var op=ch[i],n=ch[i+1];if(op==="+")v+=n;else if(op==="-")v-=n;else if(op==="×")v*=n;else v=Math.floor(v/n);}return v;}
+
+function mcRecap(ch){var v=ch[0];var h='<span style=color:#60a5fa;font-weight:600>'+v+'</span>';for(var i=1;i<ch.length;i+=2){var op=ch[i],n=ch[i+1];var oc=op==='+'?'+':op==='-'?'−':op==='×'?'×':'÷';if(op==='+')v+=n;else if(op==='-')v-=n;else if(op==='×')v*=n;else v=Math.floor(v/n);h+=' <span style=color:rgba(255,255,255,.3)>→</span> <span style=color:rgba(255,255,255,.4)>'+oc+'</span><span style=color:#60a5fa;font-weight:600>'+n+'</span> <span style=color:rgba(255,255,255,.3)>=</span>'+(i+2>=ch.length?'<span style=color:#34d399;font-weight:700>'+v+'</span>':'<span style=color:#60a5fa>'+v+'</span>');}return h;}
+
+function mcStart(){
+  _mc.total=0;_mc.correct=0;_mc.streak=0;_mc.buf="";
+  document.getElementById("mc-start-screen").style.display="none";
+  document.getElementById("mc-game").style.display="flex";
+  document.getElementById("mc-card").style.transform="";
+  document.getElementById("mc-score").textContent="0/0";
+  var rl={easy:"简单",medium:"中等",hard:"困难"};var ol={addsub:"加减",addsubmul:"加减乘",all:"加减乘除"};var pl={normal:"标准",fast:"快速",rapid:"极速"};
+  document.getElementById("mc-config").textContent=MC_CFG.steps+"步 · "+(rl[MC_CFG.range]||"简单")+" · "+(ol[MC_CFG.ops]||"加减")+" · "+(pl[MC_CFG.pace]||"标准");
+  mcRun();
+}
+
+function mcRun(){
+  _mc.chain=mcGen(MC_CFG.steps,MC_CFG.range,MC_CFG.ops);
+  _mc.step=0;_mc.buf="";
+  document.getElementById("mc-round").textContent="第 "+(_mc.total+1)+" 题";
+  document.getElementById("mc-numpad").style.display="none";
+  document.getElementById("mc-card").style.transform="";
+  document.getElementById("mc-input").textContent="";
+  document.getElementById("mc-progress").innerHTML="";
+  document.getElementById("mc-confirm").disabled=true;
+  mcNextStep();
+}
+
+function mcNextStep(){
+  var c=_mc.chain;
+  if(_mc.step>=c.length){
+    document.getElementById("mc-display").textContent="?";
+    document.getElementById("mc-sub").textContent="答案是多少？";
+    document.getElementById("mc-numpad").style.display="block";
+    document.getElementById("mc-card").style.transform="translateY(-12px)";
+    return;
+  }
+  var v=c[_mc.step];
+  if(_mc.step===0){document.getElementById("mc-display").innerHTML="<span style='color:#60a5fa'>"+v+"</span>";document.getElementById("mc-sub").textContent="记住这个数字";}
+  else{var op=c[_mc.step-1];var oc=op==="+"?"+":op==="-"?"-":op==="×"?"×":"÷";document.getElementById("mc-display").innerHTML="<span style='color:rgba(255,255,255,.6)'>"+oc+"</span><span style='color:#60a5fa'>"+v+"</span>";document.getElementById("mc-sub").textContent="心算结果...";}
+  _mc.step+=2;
+  clearTimeout(_mc.timer);
+  _mc.timer=setTimeout(mcNextStep, PACE_MS[MC_CFG.pace]||2500);
+}
+
+function mcCheck(){
+  var ans=parseInt(_mc.buf);if(isNaN(ans))return;
+  var correct=mcRes(_mc.chain);var ok=(ans===correct);
+  _mc.total++;if(ok){_mc.correct++;_mc.streak++;}else _mc.streak=0;
+  document.getElementById("mc-score").textContent=_mc.correct+"/"+_mc.total;
+  document.getElementById("mc-ricon").textContent=ok?"🎉":"😅";
+  document.getElementById("mc-rtitle").textContent=ok?"✅ 恭喜答对了":"❌ 还差一点点";
+  document.getElementById("mc-rcap").innerHTML="操作链：<br>"+mcRecap(_mc.chain);
+  if(ok&&_mc.streak>=2){document.getElementById("mc-rstreak").style.display="block";document.getElementById("mc-rstreak").textContent="🔥 连续答对 "+_mc.streak+" 题";}else document.getElementById("mc-rstreak").style.display="none";
+  document.getElementById("mc-rstats").textContent="正确 "+_mc.correct+" 题，共 "+_mc.total+" 题";
+  document.getElementById("mc-modal").style.display="flex";
+}
+
+function initMathchain(){
+  document.querySelectorAll("#mc-steps .mc-cfg").forEach(function(b){b.addEventListener("click",function(){document.querySelectorAll("#mc-steps .mc-cfg").forEach(function(x){x.classList.remove("active");});this.classList.add("active");MC_CFG.steps=parseInt(this.dataset.val);});});
+  document.querySelectorAll("#mc-range .mc-cfg").forEach(function(b){b.addEventListener("click",function(){document.querySelectorAll("#mc-range .mc-cfg").forEach(function(x){x.classList.remove("active");});this.classList.add("active");MC_CFG.range=this.dataset.val;});});
+  document.querySelectorAll("#mc-ops .mc-cfg").forEach(function(b){b.addEventListener("click",function(){document.querySelectorAll("#mc-ops .mc-cfg").forEach(function(x){x.classList.remove("active");});this.classList.add("active");MC_CFG.ops=this.dataset.val;});});
+  document.querySelectorAll("#mc-pace .mc-cfg").forEach(function(b){b.addEventListener("click",function(){document.querySelectorAll("#mc-pace .mc-cfg").forEach(function(x){x.classList.remove("active");});this.classList.add("active");MC_CFG.pace=this.dataset.val;});});
+  document.querySelectorAll(".mc-np").forEach(function(b){b.addEventListener("click",function(){_mc.buf+=this.dataset.d;document.getElementById("mc-input").textContent=_mc.buf;document.getElementById("mc-confirm").disabled=false;});});
+  document.getElementById("mc-clear").addEventListener("click",function(){_mc.buf="";document.getElementById("mc-input").textContent="";document.getElementById("mc-confirm").disabled=true;});
+  document.getElementById("mc-back").addEventListener("click",function(){_mc.buf=_mc.buf.slice(0,-1);document.getElementById("mc-input").textContent=_mc.buf;document.getElementById("mc-confirm").disabled=_mc.buf.length===0;});
+  document.getElementById("mc-confirm").addEventListener("click",mcCheck);
+  document.getElementById("mc-btn-start").addEventListener("click",mcStart);
+  document.getElementById("mc-btn-return").addEventListener("click",function(){document.getElementById("mc-container").style.display="none"; document.getElementById("mode-screen").style.display="flex"; });
   document.getElementById("mc-modal-continue").addEventListener("click",function(){document.getElementById("mc-modal").style.display="none";document.getElementById("mc-card").style.transform="";mcRun();});
   document.getElementById("mc-modal-back").addEventListener("click",function(){document.getElementById("mc-modal").style.display="none";document.getElementById("mc-game").style.display="none";document.getElementById("mc-start-screen").style.display="flex";document.getElementById("mc-container").style.display="none"; document.getElementById("mode-screen").style.display="flex"; });
+}
 
 // === 用户系统 ===
 var _userInfo = null;
@@ -937,20 +1168,27 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('exit-btn').addEventListener('click',function(){document.getElementById('exit-modal').classList.add('show');});
   document.getElementById('exit-cancel').addEventListener('click',function(){document.getElementById('exit-modal').classList.remove('show');});
   document.getElementById('exit-confirm').addEventListener('click',function(){document.getElementById('exit-modal').classList.remove('show');document.getElementById('app').style.display='none'; document.getElementById('mode-screen').style.display='flex'; });
-  initMathchain();
+  // 如果已有用户信息，初始化时填入留言板
+  var u = getUser();
+  if (u) {
+    var ni = document.getElementById('win-fb-name');
+    if (ni) { ni.value = u.name; ni.readOnly = true; ni.style.color = 'rgba(255,255,255,.7)'; }
+  }
 });
 
+// === 给小王留言 反馈功能（Supabase 版）===
+(function(){'use strict';
 const SUPABASE_URL = 'https://pkxmsfyzcphzvuangrzs.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBreG1zZnl6Y3BoenZ1YW5ncnpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNDkxNzcsImV4cCI6MjA5NDYyNTE3N30.K1_niR4ZylqzbDPFnmTs5HRo2aEbObkGw3V9clM1czo';
-const btn = document.getElementById('mode-fb-btn');
-const modal = document.getElementById('mode-fb-form');
-const msgsContainer = document.getElementById('mode-msgs');
-const empty = document.getElementById('mode-fb-empty');
-const nameInput = document.getElementById('mode-fb-name');
-const textInput = document.getElementById('mode-fb-text');
-const sendBtn = document.getElementById('mode-fb-send');
-const cancelBtn = document.getElementById('mode-fb-cancel');
-const statusEl = document.getElementById('mode-fb-status');
+const btn = document.getElementById('win-fb-btn');
+const form = document.getElementById('win-fb-form');
+const msgsContainer = document.getElementById('win-msgs');
+const empty = document.getElementById('win-fb-empty');
+const nameInput = document.getElementById('win-fb-name');
+const textInput = document.getElementById('win-fb-text');
+const sendBtn = document.getElementById('win-fb-send');
+const cancelBtn = document.getElementById('win-fb-cancel');
+const statusEl = document.getElementById('win-fb-status');
 let loading = false;
 
 function escapeHtml(text){const d=document.createElement('div');d.appendChild(document.createTextNode(text));return d.innerHTML;}
@@ -964,16 +1202,11 @@ function checkForm(){sendBtn.disabled=!(textInput.value.trim());}
 
 function sendMessage(){if(loading)return;const n=nameInput.value.trim();const t=textInput.value.trim();if(!n||!t)return;loading=true;sendBtn.disabled=true;sendBtn.textContent='发送中…';fetch(SUPABASE_URL+'/rest/v1/feedback',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({name:n,text:t,time:Date.now()})}).then(r=>{if(!r.ok)throw new Error('发送失败');setStatus('✓ 已发送，谢谢你 💛',true);nameInput.value='';textInput.value='';checkForm();loadMessages();}).catch(e=>{setStatus('✗ '+e.message,false);}).finally(()=>{loading=false;sendBtn.disabled=false;sendBtn.textContent='📮 发送';});}
 
-btn.addEventListener('click',function(){modal.style.display='flex';loadMessages();});
-cancelBtn.addEventListener('click',function(){modal.style.display='none';});
-modal.addEventListener('click',function(e){if(e.target===modal)modal.style.display='none';});
+btn.addEventListener('click',function(){form.classList.toggle('open');if(form.classList.contains('open'))loadMessages();});
+cancelBtn.addEventListener('click',function(){form.classList.remove('open');});
 textInput.addEventListener('input',checkForm);
 sendBtn.addEventListener('click',sendMessage);
 textInput.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(!sendBtn.disabled)sendMessage();}});
-
-  // 自动填名字
-  var u = getUser();
-  if (u && nameInput) { nameInput.value = u.name; nameInput.readOnly = true; nameInput.style.color = 'rgba(255,255,255,.7)'; }
 })();
 </script>
 </body>
