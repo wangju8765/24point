@@ -17,7 +17,7 @@ var _hmt = _hmt || [];
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:#0f0f1a;color:#eee;touch-action:manipulation;-webkit-overflow-scrolling:touch}
 #app{width:100%;height:100%;display:flex;flex-direction:column;max-width:480px;margin:0 auto;position:relative;overflow:hidden}
-#header{padding:6px 10px 4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;flex-wrap:wrap;gap:5px}
+#header{padding:10px 10px 4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;flex-wrap:wrap;gap:6px}
 #bubble-layer.think-fast .mini-card .mc-result{font-size:28px;font-weight:800;line-height:1;letter-spacing:-.5px;flex:1;display:flex;align-items:center;justify-content:center}
 #bubble-layer.think-deep .mini-card .mc-result{font-size:36px;font-weight:800;line-height:1;flex:1;display:flex;align-items:center;justify-content:center}
 #think-group,#mode-group,#rule-group{display:flex;gap:3px;background:rgba(255,255,255,.08);border-radius:12px;padding:3px}
@@ -26,7 +26,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 .mode-btn.active{background:#f59e0b;color:#1a1a2e;box-shadow:0 2px 8px rgba(245,158,11,.35)}
 .rule-btn.active{background:#818cf8;color:#1a1a2e;box-shadow:0 2px 8px rgba(129,140,248,.35)}
 #game-area{flex:1;position:relative;overflow:hidden;touch-action:none}
-#card-container{position:absolute;inset:0;padding-top:60px}
+#card-container{position:absolute;inset:0;padding-top:80px}
 .card{position:absolute;width:90px;height:125px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab;transition:box-shadow .2s,transform .15s;will-change:transform;touch-action:none}
 .card-inner{width:100%;height:100%;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.15)}
 .card-value{font-size:42px;font-weight:800;line-height:1;letter-spacing:-1px}
@@ -44,7 +44,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 .card.dragging{z-index:100;transform:scale(1.08);box-shadow:0 12px 40px rgba(0,0,0,.45),0 0 0 2px rgba(245,158,11,.4);cursor:grabbing;transition:none}
 .card.dragging .card-inner{transform:rotate(2deg)}
 .card.hover-target-outline{outline:2px dashed rgba(245,158,11,.3);outline-offset:4px;border-radius:14px}
-#timer-center{position:absolute;top:30px;left:50%;transform:translateX(-50%);z-index:40;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none}
+#timer-center{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:40;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none}
 #tc-icon{font-size:44px;line-height:1}
 #tc-display{font-size:28px;font-weight:800;letter-spacing:3px;color:rgba(255,255,255,.4);font-variant-numeric:tabular-nums}
 #bubble-layer{position:absolute;inset:0;pointer-events:none;z-index:150}
@@ -353,7 +353,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 <div id="app">
   <div id="header">
     <div style="font-size:20px;font-weight:800;color:#f59e0b;width:100%;text-align:center;letter-spacing:3px;margin-bottom:4px">速算24点</div>
-    <div id="think-group" style="margin-top:12px">
+    <div id="think-group">
       <button class="think-btn active" data-think="fast">快速</button>
       <button class="think-btn" data-think="deep">思考</button>
     </div>
@@ -380,7 +380,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
     <button class="btn-new" id="new-game-btn">🎲 新题</button>
   </div>
   <div id="exit-area" style="flex-shrink:0;padding:0 10px 30px;text-align:center">
-    <button class="btn-exit" id="exit-btn" style="background:rgba(239,68,68,.12);color:#f87171;border:none;border-radius:10px;padding:7px 20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🚪 退出</button>
+    <button class="btn-exit" id="exit-btn" style="background:rgba(239,68,68,.12);color:#f87171;border:none;border-radius:10px;padding:10px 0;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;width:110px;display:inline-flex;align-items:center;justify-content:center;gap:3px">🚪 退出</button>
   </div>
 </div>
 <div class="modal-overlay" id="win-modal">
