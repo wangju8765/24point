@@ -114,6 +114,25 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 .d-c5{background:linear-gradient(145deg,#22d3ee,#0891b2);width:30px;height:40px;font-size:14px}
 .d-arrow{font-size:18px;color:rgba(255,255,255,.5)}
 .d-arrow2{font-size:18px;color:rgba(255,255,255,.5)}
+.s-rule-desc{font-size:13px;color:rgba(255,255,255,.45);line-height:1.5;margin-top:4px}
+.btn-skip{background:rgba(107,114,128,.2);color:rgba(255,255,255,.45)}
+.btn-skip:hover{background:rgba(107,114,128,.35);color:rgba(255,255,255,.65)}
+
+/* Mode Screen - level 2 menu */
+#mode-screen{position:fixed;inset:0;z-index:400;display:none;background:linear-gradient(160deg,#0f0f1a,#16162e,#0f0f1a);flex-direction:column;align-items:center;justify-content:center;gap:16px}
+#mode-screen button{font-family:inherit}
+#mode-screen .btn-start-game{background:linear-gradient(135deg,#f59e0b,#e88d0a);color:#1a1a2e;border:none;border-radius:14px;padding:13px 42px;font-size:17px;font-weight:700;cursor:pointer;letter-spacing:3px}
+#mode-screen .btn-start-game:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(245,158,11,.35)}
+#mode-screen .btn-start-game:active{transform:translateY(0)}
+#mode-screen .btn-secondary{background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);border:none;border-radius:14px;padding:11px 42px;font-size:15px;font-weight:600;cursor:pointer;letter-spacing:2px}
+#mode-screen .btn-secondary:hover{background:rgba(255,255,255,.12);color:rgba(255,255,255,.8)}
+#mode-screen .btn-secondary:active{transform:scale(.95)}
+
+/* Rules Screen - level 3 page */
+#rules-screen{position:fixed;inset:0;z-index:400;display:none;background:linear-gradient(160deg,#0f0f1a,#16162e,#0f0f1a);flex-direction:column;align-items:center;overflow-y:auto;padding:20px}
+#rules-screen .rules-inner{text-align:center;max-width:380px;width:100%;padding-top:30px}
+#rules-screen .rules-back{background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);border:none;border-radius:12px;padding:11px 36px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:20px}
+#rules-screen .rules-back:hover{background:rgba(255,255,255,.12);color:rgba(255,255,255,.8)}
 
 /* Feedback Button & Modal */
 /* Win Modal Feedback */
@@ -174,6 +193,41 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
         <span class="d-card d-c5">3</span>
       </div>
     </div>
+  </div>
+</div>
+
+<div id="mode-screen">
+  <button class="btn-start-game" id="mode-free">🎮 自由练习</button>
+  <button class="btn-secondary" id="mode-rules">📖 规则说明</button>
+</div>
+
+<div id="rules-screen">
+  <div class="rules-inner">
+    <div class="s-rules-title">规 则 说 明</div>
+    <div class="s-rule-block">
+      <div class="s-rule-label"><span class="s-emoji">🖐️</span> 拖动合并卡片</div>
+      <div class="s-diagram">
+        <span class="d-card d-c1">2</span>
+        <span class="d-arrow">→</span>
+        <span class="d-card d-c2">3</span>
+      </div>
+      <div class="s-rule-desc">将一张卡片拖到另一张上，选择运算合并</div>
+    </div>
+    <div class="s-rule-block">
+      <div class="s-rule-label"><span class="s-emoji">👇</span> 点击拆分卡片</div>
+      <div class="s-diagram">
+        <span class="d-card d-c3">5</span>
+        <span class="d-arrow2">→</span>
+        <span class="d-card d-c4">2</span>
+        <span class="d-card d-c5">3</span>
+      </div>
+      <div class="s-rule-desc">合并结果可以点开，退回上一步</div>
+    </div>
+    <div class="s-rule-block">
+      <div class="s-rule-label"><span class="s-emoji">🎯</span> 目标</div>
+      <div class="s-rule-desc">用4张牌通过加减乘除算出24，每张牌用1次</div>
+    </div>
+    <button class="rules-back" id="rules-back-btn">← 返回</button>
   </div>
 </div>
 
@@ -767,7 +821,12 @@ function init() {
   newGame();
 }
 
-document.addEventListener('DOMContentLoaded', function(){ document.getElementById('start-btn').addEventListener('click',function(){document.getElementById('start-screen').classList.add('hidden');}); init(); });
+document.addEventListener('DOMContentLoaded', function(){ 
+  document.getElementById('start-btn').addEventListener('click',function(){document.getElementById('start-screen').classList.add('hidden'); document.getElementById('mode-screen').style.display='flex'; });
+  document.getElementById('mode-free').addEventListener('click',function(){document.getElementById('mode-screen').style.display='none'; init(); });
+  document.getElementById('mode-rules').addEventListener('click',function(){document.getElementById('mode-screen').style.display='none'; document.getElementById('rules-screen').style.display='flex'; });
+  document.getElementById('rules-back-btn').addEventListener('click',function(){document.getElementById('rules-screen').style.display='none'; document.getElementById('mode-screen').style.display='flex'; });
+});
 
 // === 给小王留言 反馈功能（Supabase 版）===
 (function(){'use strict';
