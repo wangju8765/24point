@@ -292,6 +292,22 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
         <button class="mc-cfg" data-val="hard">困难</button>
       </div>
     </div>
+    <div style="width:100%">
+      <div style="font-size:11px;font-weight:700;color:rgba(129,140,248,.7);margin-bottom:4px">➗ 运算</div>
+      <div id="mc-ops" style="display:flex;gap:5px">
+        <button class="mc-cfg active" data-val="addsub">加减</button>
+        <button class="mc-cfg" data-val="addsubmul">加减乘</button>
+        <button class="mc-cfg" data-val="all">加减乘除</button>
+      </div>
+    </div>
+    <div style="width:100%">
+      <div style="font-size:11px;font-weight:700;color:rgba(244,114,182,.7);margin-bottom:4px">⏱ 节奏</div>
+      <div id="mc-pace" style="display:flex;gap:5px">
+        <button class="mc-cfg active" data-val="normal">标准</button>
+        <button class="mc-cfg" data-val="fast">快速</button>
+        <button class="mc-cfg" data-val="rapid">极速</button>
+      </div>
+    </div>
     <button id="mc-btn-start" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:14px;padding:12px 0;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:3px;width:100%;margin-top:8px">开始</button>
     <button id="mc-btn-return" style="background:rgba(255,255,255,.07);color:rgba(255,255,255,.45);border:none;border-radius:10px;padding:9px;font-size:12px;font-weight:600;cursor:pointer;width:100%;margin:4px 0 0">← 返回</button>
   </div>
@@ -362,6 +378,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
     <button class="btn-reset" id="reset-btn">🔄 重来</button>
     <button class="btn-undo" id="undo-btn" disabled>↩ 退回</button>
     <button class="btn-new" id="new-game-btn">🎲 新题</button>
+    <button class="btn-back" id="back-btn" style="background:rgba(107,114,128,.2);color:rgba(255,255,255,.45);padding:8px 10px;font-size:12px">← 返回</button>
   </div>
 </div>
 <div class="modal-overlay" id="win-modal">
@@ -974,7 +991,8 @@ function init() {
 
 // === 心算链条 ===
 var _mc = { chain:[], step:0, total:0, correct:0, streak:0, timer:null, buf:"" };
-var MC_CFG = { steps:4, range:"easy", ops:"addsub" };
+var MC_CFG = { steps:4, range:"easy", ops:"addsub", pace:"normal" };
+var PACE_MS = { normal:3000, fast:2000, rapid:1500 };
 var R_CFG = {easy:{sL:1,sH:10,mM:25,iM:10},medium:{sL:1,sH:20,mM:50,iM:15}};
 
 function mcGen(s,r,o){
@@ -1011,8 +1029,8 @@ function mcStart(){
   document.getElementById("mc-game").style.display="flex";
   document.getElementById("mc-card").style.transform="";
   document.getElementById("mc-score").textContent="0/0";
-  var rl={easy:"简单",medium:"中等",hard:"困难"};var ol={addsub:"加减",addsubmul:"加减乘",all:"加减乘除"};
-  document.getElementById("mc-config").textContent=MC_CFG.steps+"步 · "+(rl[MC_CFG.range]||"简单")+" · "+(ol[MC_CFG.ops]||"加减");
+  var rl={easy:"简单",medium:"中等",hard:"困难"};var ol={addsub:"加减",addsubmul:"加减乘",all:"加减乘除"};var pl={normal:"标准",fast:"快速",rapid:"极速"};
+  document.getElementById("mc-config").textContent=MC_CFG.steps+"步 · "+(rl[MC_CFG.range]||"简单")+" · "+(ol[MC_CFG.ops]||"加减")+" · "+(pl[MC_CFG.pace]||"标准");
   mcRun();
 }
 
@@ -1042,7 +1060,7 @@ function mcNextStep(){
   else{var op=c[_mc.step-1];var oc=op==="+"?"+":op==="-"?"-":op==="×"?"×":"÷";document.getElementById("mc-display").innerHTML="<span style='color:rgba(255,255,255,.6)'>"+oc+"</span><span style='color:#60a5fa'>"+v+"</span>";document.getElementById("mc-sub").textContent="心算结果...";}
   _mc.step+=2;
   clearTimeout(_mc.timer);
-  _mc.timer=setTimeout(mcNextStep, 2500);
+  _mc.timer=setTimeout(mcNextStep, PACE_MS[MC_CFG.pace]||2500);
 }
 
 function mcCheck(){
@@ -1061,6 +1079,8 @@ function mcCheck(){
 function initMathchain(){
   document.querySelectorAll("#mc-steps .mc-cfg").forEach(function(b){b.addEventListener("click",function(){document.querySelectorAll("#mc-steps .mc-cfg").forEach(function(x){x.classList.remove("active");});this.classList.add("active");MC_CFG.steps=parseInt(this.dataset.val);});});
   document.querySelectorAll("#mc-range .mc-cfg").forEach(function(b){b.addEventListener("click",function(){document.querySelectorAll("#mc-range .mc-cfg").forEach(function(x){x.classList.remove("active");});this.classList.add("active");MC_CFG.range=this.dataset.val;});});
+  document.querySelectorAll("#mc-ops .mc-cfg").forEach(function(b){b.addEventListener("click",function(){document.querySelectorAll("#mc-ops .mc-cfg").forEach(function(x){x.classList.remove("active");});this.classList.add("active");MC_CFG.ops=this.dataset.val;});});
+  document.querySelectorAll("#mc-pace .mc-cfg").forEach(function(b){b.addEventListener("click",function(){document.querySelectorAll("#mc-pace .mc-cfg").forEach(function(x){x.classList.remove("active");});this.classList.add("active");MC_CFG.pace=this.dataset.val;});});
   document.querySelectorAll(".mc-np").forEach(function(b){b.addEventListener("click",function(){_mc.buf+=this.dataset.d;document.getElementById("mc-input").textContent=_mc.buf;document.getElementById("mc-confirm").disabled=false;});});
   document.getElementById("mc-clear").addEventListener("click",function(){_mc.buf="";document.getElementById("mc-input").textContent="";document.getElementById("mc-confirm").disabled=true;});
   document.getElementById("mc-back").addEventListener("click",function(){_mc.buf=_mc.buf.slice(0,-1);document.getElementById("mc-input").textContent=_mc.buf;document.getElementById("mc-confirm").disabled=_mc.buf.length===0;});
@@ -1128,9 +1148,10 @@ function goToModeScreen() {
 document.addEventListener('DOMContentLoaded', function(){ 
   document.getElementById('start-btn').addEventListener('click', goToModeScreen);
   document.getElementById('mode-mathchain').addEventListener('click',function(){document.getElementById('mode-screen').style.display='none'; document.getElementById('mc-container').style.display='block'; });
-  document.getElementById('mode-free').addEventListener('click',function(){document.getElementById('mode-screen').style.display='none'; init(); });
+  document.getElementById('mode-free').addEventListener('click',function(){document.getElementById('mode-screen').style.display='none'; document.getElementById('app').style.display='flex'; init(); });
   document.getElementById('mode-rules').addEventListener('click',function(){document.getElementById('mode-screen').style.display='none'; document.getElementById('rules-screen').style.display='flex'; });
   document.getElementById('rules-back-btn').addEventListener('click',function(){document.getElementById('rules-screen').style.display='none'; document.getElementById('mode-screen').style.display='flex'; });
+  document.getElementById('back-btn').addEventListener('click',function(){document.getElementById('app').style.display='none'; document.getElementById('mode-screen').style.display='flex'; });
   // 如果已有用户信息，初始化时填入留言板
   var u = getUser();
   if (u) {
