@@ -1147,7 +1147,7 @@ function goToModeScreen() {
 
 document.addEventListener('DOMContentLoaded', function(){ 
   document.getElementById('start-btn').addEventListener('click', goToModeScreen);
-  document.getElementById('mode-mathchain').addEventListener('click',function(){document.getElementById('mode-screen').style.display='none'; document.getElementById('mc-container').style.display='block'; });
+  document.getElementById('mode-mathchain').addEventListener('click',function(){window.location.href='mathchain.html';});
   document.getElementById('mode-free').addEventListener('click',function(){document.getElementById('mode-screen').style.display='none'; document.getElementById('app').style.display='flex'; init(); });
   document.getElementById('mode-rules').addEventListener('click',function(){document.getElementById('mode-screen').style.display='none'; document.getElementById('rules-screen').style.display='flex'; });
   document.getElementById('rules-back-btn').addEventListener('click',function(){document.getElementById('rules-screen').style.display='none'; document.getElementById('mode-screen').style.display='flex'; });
