@@ -835,8 +835,39 @@ function _freeLog(type, data) {
 
 function doUpload(solved) {
   if (!_freePuzzle) return;
-  }
-});
+  var u = getUser();
+  if (!u) u = { name: 'guest', grade: 0, deviceId: getDeviceId() };
+  var timeMs = getElapsedSeconds() * 1000;
+  var data = {
+    name: '_freeplay_',
+    text: JSON.stringify({
+      user: u,
+      problem: _freePuzzle,
+      eventLog: _freeEventLog,
+      solved: solved,
+      steps: state.steps || 0,
+      timeMs: timeMs,
+      mode: state.mode,
+      rule: state.rule,
+      thinkMode: state.thinkMode
+    }),
+    time: Date.now()
+  };
+  try {
+    fetch('https://pkxmsfyzcphzvuangrzs.supabase.co/rest/v1/feedback', {
+      method: 'POST',
+      headers: {
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBreG1zZnl6Y3BoenZ1YW5ncnpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNDkxNzcsImV4cCI6MjA5NDYyNTE3N30.K1_niR4ZylqzbDPFnmTs5HRo2aEbObkGw3V9clM1czo',
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(data)
+    }).catch(function(e){});
+  } catch(e){}
+  _freeEventLog = []; _freePuzzle = null;
+}
+
+
 
 // === 给小王留言 反馈功能（模式选择页版）===
 (function(){'use strict';
