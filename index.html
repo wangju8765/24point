@@ -26,7 +26,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 .mode-btn.active{background:#f59e0b;color:#1a1a2e;box-shadow:0 2px 8px rgba(245,158,11,.35)}
 .rule-btn.active{background:#818cf8;color:#1a1a2e;box-shadow:0 2px 8px rgba(129,140,248,.35)}
 #game-area{flex:1;position:relative;overflow:hidden;touch-action:none}
-#card-container{position:absolute;inset:0;overflow:hidden}
+#card-container{position:absolute;inset:0}
 .card{position:absolute;width:90px;height:125px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab;transition:box-shadow .2s,transform .15s;will-change:transform;touch-action:none}
 .card-inner{width:100%;height:100%;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.15)}
 .card-value{font-size:42px;font-weight:800;line-height:1;letter-spacing:-1px}
@@ -44,9 +44,9 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 .card.dragging{z-index:100;transform:scale(1.08);box-shadow:0 12px 40px rgba(0,0,0,.45),0 0 0 2px rgba(245,158,11,.4);cursor:grabbing;transition:none}
 .card.dragging .card-inner{transform:rotate(2deg)}
 .card.hover-target-outline{outline:2px dashed rgba(245,158,11,.3);outline-offset:4px;border-radius:14px}
-#timer-center{position:absolute;top:25px;left:50%;transform:translateX(-50%);z-index:40;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none}
-#tc-icon{font-size:44px;line-height:1}
-#tc-display{font-size:28px;font-weight:800;letter-spacing:3px;color:rgba(255,255,255,.4);font-variant-numeric:tabular-nums}
+#timer-center{display:flex;align-items:center;justify-content:center;gap:4px;flex-shrink:0;padding:2px 0}
+#tc-icon{font-size:22px;line-height:1}
+#tc-display{font-size:20px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,.4);font-variant-numeric:tabular-nums}
 #bubble-layer{position:absolute;inset:0;pointer-events:none;z-index:150}
 .mini-card{position:absolute;width:72px;height:88px;border-radius:10px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:transform .15s;box-shadow:0 4px 12px rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.15);pointer-events:auto;background:rgba(20,20,40,.95);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 .mini-card:active{transform:scale(.9)}
@@ -366,11 +366,11 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
       <button class="rule-btn" data-rule="frac">分数</button>
     </div>
   </div>
+  <div id="timer-center">
+    <div id="tc-icon">⏱</div>
+    <div id="tc-display">0:00</div>
+  </div>
   <div id="game-area">
-    <div id="timer-center">
-      <div id="tc-icon">⏱</div>
-      <div id="tc-display">0:00</div>
-    </div>
     <div id="card-container"></div>
     <div id="bubble-layer"></div>
   </div>
@@ -470,7 +470,7 @@ const toast = document.getElementById('toast');
 // Constants
 const TARGET = 24, CARD_W = 90, CARD_H = 125;
 const PROXIMITY_THRESHOLD = 150, FULL_OPACITY_DISTANCE = 50, MERGE_DROP_THRESHOLD = 50, COLORS = 4;
-const CARD_Y_OFFSET = 160;
+const CARD_Y_OFFSET = 0;
 
 // Timer
 let gameStartTime = 0, timerInterval = null;
