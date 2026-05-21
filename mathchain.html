@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>💭 心算链条 — 语音回路训练</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0f0f1a;color:#eee;touch-action:manipulation}
+#app{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;max-width:420px;margin:0 auto;padding:0;position:relative}
+#start-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;overflow-y:auto;padding:20px 16px;gap:6px}
+#start-screen>*{max-width:340px;width:100%;flex-shrink:0}
+.title{font-size:28px;font-weight:800;background:linear-gradient(135deg,#60a5fa,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:0;text-align:center}
+.subtitle{font-size:13px;color:rgba(255,255,255,.3);margin-bottom:0;text-align:center;line-height:1.4}
+.rules-box{background:rgba(255,255,255,.04);border-radius:12px;padding:12px 14px;margin:0;width:100%;line-height:1.6}
+.rules-box .r-title{font-size:11px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:1px;margin-bottom:3px}
+.rules-box .r-line{font-size:12px;color:rgba(255,255,255,.5)}
+.rules-box .r-line .hl{color:#60a5fa;font-weight:600}
+.ctrl-group{width:100%;margin:0}
+.ctrl-group .cg-label{font-size:11px;font-weight:700;margin-bottom:4px}
+.ctrl-group .cg-btns{display:flex;gap:5px}
+.ctrl-group .cg-btn{padding:7px 0;border:1px solid rgba(255,255,255,.08);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.04);color:rgba(255,255,255,.35);flex:1;text-align:center;transition:all .2s}
+.ctrl-group .cg-btn:active{transform:scale(.95)}
+.ctrl-group.g-steps .cg-btn.active{background:#10b981;color:#fff;border-color:#10b981;box-shadow:0 2px 8px rgba(16,185,129,.35)}
+.ctrl-group.g-range .cg-btn.active{background:#f59e0b;color:#1a1a2e;border-color:#f59e0b;box-shadow:0 2px 8px rgba(245,158,11,.35)}
+.ctrl-group.g-ops .cg-btn.active{background:#818cf8;color:#1a1a2e;border-color:#818cf8;box-shadow:0 2px 8px rgba(129,140,248,.35)}
+.ctrl-group.g-pace .cg-btn.active{background:#f472b6;color:#1a1a2e;border-color:#f472b6;box-shadow:0 2px 8px rgba(244,114,182,.35)}
+.start-btn{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:14px;padding:12px 0;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:3px;box-shadow:0 4px 20px rgba(59,130,246,.2);margin-top:8px;width:100%}
+.start-btn:active{transform:scale(.95)}
+.btn-return{background:rgba(255,255,255,.07);color:rgba(255,255,255,.45);border:none;border-radius:10px;padding:9px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;width:100%;text-align:center;margin:4px 0 0}
+.btn-return:active{transform:scale(.95)}
+#game-screen{display:none;flex-direction:column;width:100%;height:100%}
+#game-screen.active{display:flex}
+.game-header{display:flex;align-items:center;gap:8px;flex-shrink:0;padding:4px 16px 6px}
+.gh-round{font-size:12px;font-weight:700;color:#60a5fa}
+.gh-config{font-size:10px;color:rgba(255,255,255,.25);margin-left:auto}
+.gh-sound{font-size:16px;cursor:pointer;margin-left:4px;user-select:none;padding:2px;border-radius:6px;transition:background .2s}
+.gh-sound:active{background:rgba(255,255,255,.1)}
+.gh-score{font-size:11px;color:rgba(255,255,255,.3);margin-left:8px}
+.stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
+.chain-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:24px;padding:32px 44px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.chain-card.shift{transform:translateY(-12px)}
+.chain-display{font-size:52px;font-weight:800;letter-spacing:4px;min-height:68px;display:flex;align-items:center;justify-content:center}
+.chain-display .num{color:#60a5fa}
+.chain-display .op{color:rgba(255,255,255,.6);margin:0 4px}
+.chain-sub{font-size:14px;color:rgba(255,255,255,.3);min-height:20px}
+.chain-progress{width:100%;height:6px;display:flex;gap:2px;flex-shrink:0;padding:2px 16px}
+.cp-seg{flex:1;height:100%;border-radius:2px;background:rgba(255,255,255,.06);transition:background .3s}
+.cp-seg.done{background:#60a5fa}
+.num-pad{width:100%;flex-shrink:0;padding:6px 16px 16px;display:none}
+.num-pad.show{display:block}
+.np-display{height:44px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:#60a5fa;margin-bottom:6px;letter-spacing:2px}
+.np-rows{display:flex;flex-direction:column;gap:6px}
+.np-row{display:flex;gap:6px}
+.np-btn{flex:1;padding:13px 0;border:none;border-radius:12px;font-size:22px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.06);color:#fff;transition:all .1s;text-align:center;font-family:inherit}
+.np-btn:active{transform:scale(.93);background:rgba(255,255,255,.12)}
+.np-btn.fn{background:rgba(255,255,255,.04);color:rgba(255,255,255,.35);font-size:15px}
+.np-btn.cfm{background:#3b82f6;color:#fff;font-size:15px;letter-spacing:2px;box-shadow:0 3px 12px rgba(59,130,246,.2);padding:12px 0}
+.np-btn.cfm:disabled{opacity:.25}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:200}
+.modal-overlay.show{display:flex}
+.modal{background:linear-gradient(145deg,#1e1e3a,#15152a);border-radius:24px;padding:28px 24px;text-align:center;max-width:320px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal .big-icon{font-size:48px;margin-bottom:2px}
+.modal h2{font-size:22px;font-weight:800;margin-bottom:8px}
+.modal .chain-recap{font-size:13px;color:rgba(255,255,255,.5);line-height:1.8;padding:6px 0;text-align:center}
+.modal .chain-recap .sv{color:#60a5fa;font-weight:600}
+.modal .chain-recap .so{color:rgba(255,255,255,.4)}
+.modal .chain-recap .sn{color:#60a5fa}
+.modal .chain-recap .sr{color:#60a5fa}
+.modal .chain-recap .fin{color:#34d399;font-weight:700}
+.modal .chain-recap .sep{color:rgba(255,255,255,.3)}
+.modal .streak-display{font-size:14px;color:#fbbf24;font-weight:600;padding:2px 0}
+.modal .total-stats{font-size:12px;color:rgba(255,255,255,.3);margin-bottom:6px}
+.modal-btns{display:flex;gap:10px;margin-top:10px}
+.modal-btns button{flex:1;padding:12px;border:none;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s}
+.modal-btns button:active{transform:scale(.95)}
+.modal-btn-primary{background:#f59e0b;color:#1a1a2e;box-shadow:0 4px 16px rgba(245,158,11,.25)}
+.modal-btn-secondary{background:rgba(255,255,255,.08);color:rgba(255,255,255,.6)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="start-screen">
+    <div class="title">💭 心算链条</div>
+    <div class="subtitle">在脑中保持每一步的结果</div>
+
+    <div class="rules-box">
+      <div class="r-title">🎯 玩法</div>
+      <div class="r-line">1. 屏幕会<span class="hl">逐一显示</span>一个操作链：<span class="hl">8 → +5 → ×2</span></div>
+      <div class="r-line">2. 用<span class="hl">心算</span>记住<span class="hl">每一步</span>的中间结果</div>
+      <div class="r-line">3. 全部显示完后，输入<span class="hl">最终答案</span></div>
+      <div class="r-line" style="font-size:10px;color:rgba(255,255,255,.3);margin-top:2px">💡 例：8 → +5 (=13) → ×2 (=26) → 输入 26</div>
+    </div>
+
+    <div class="ctrl-group g-steps">
+      <div class="cg-label" style="color:rgba(16,185,129,.7)">🧮 步数</div>
+      <div class="cg-btns">
+        <button class="cg-btn active" data-key="steps" data-val="4">4步</button>
+        <button class="cg-btn" data-key="steps" data-val="5">5步</button>
+        <button class="cg-btn" data-key="steps" data-val="6">6步</button>
+      </div>
+    </div>
+
+    <div class="ctrl-group g-range">
+      <div class="cg-label" style="color:rgba(245,158,11,.7)">🔢 数字</div>
+      <div class="cg-btns">
+        <button class="cg-btn active" data-key="range" data-val="easy">简单</button>
+        <button class="cg-btn" data-key="range" data-val="medium">中等</button>
+        <button class="cg-btn" data-key="range" data-val="hard">困难</button>
+      </div>
+    </div>
+
+    <div class="ctrl-group g-ops">
+      <div class="cg-label" style="color:rgba(129,140,248,.7)">➗ 运算</div>
+      <div class="cg-btns">
+        <button class="cg-btn active" data-key="ops" data-val="addsub">加减</button>
+        <button class="cg-btn" data-key="ops" data-val="addsubmul">加减乘</button>
+        <button class="cg-btn" data-key="ops" data-val="all">加减乘除</button>
+      </div>
+    </div>
+
+    <div class="ctrl-group g-pace">
+      <div class="cg-label" style="color:rgba(244,114,182,.7)">⏱ 节奏</div>
+      <div class="cg-btns">
+        <button class="cg-btn active" data-key="pace" data-val="normal">标准</button>
+        <button class="cg-btn" data-key="pace" data-val="fast">快速</button>
+        <button class="cg-btn" data-key="pace" data-val="rapid">极速</button>
+      </div>
+    </div>
+
+    <button class="start-btn" id="btn-start">开始</button>
+    <button class="btn-return" onclick="history.back()">← 返回</button>
+  </div>
+
+  <div id="game-screen">
+    <div class="game-header">
+      <span class="gh-round" id="round-display">第 1 题</span>
+      <span class="gh-config" id="config-display"></span>
+      <span class="gh-sound" id="sound-toggle">🔊</span>
+      <span class="gh-score" id="score-display">0/0</span>
+    </div>
+    <div class="stage" id="stage-display">
+      <div class="chain-card" id="chain-card">
+        <div class="chain-display" id="chain-display">8</div>
+        <div class="chain-sub" id="chain-sub">记住这个数字</div>
+      </div>
+    </div>
+    <div class="chain-progress" id="progress-bar"></div>
+    <div id="feedback-placeholder" style="height:6px"></div>
+    <div class="num-pad" id="num-pad">
+      <div class="np-display" id="np-display"></div>
+      <div class="np-rows">
+        <div class="np-row">
+          <button class="np-btn" data-d="1">1</button>
+          <button class="np-btn" data-d="2">2</button>
+          <button class="np-btn" data-d="3">3</button>
+        </div>
+        <div class="np-row">
+          <button class="np-btn" data-d="4">4</button>
+          <button class="np-btn" data-d="5">5</button>
+          <button class="np-btn" data-d="6">6</button>
+        </div>
+        <div class="np-row">
+          <button class="np-btn" data-d="7">7</button>
+          <button class="np-btn" data-d="8">8</button>
+          <button class="np-btn" data-d="9">9</button>
+        </div>
+        <div class="np-row">
+          <button class="np-btn fn" id="np-clear">C</button>
+          <button class="np-btn" data-d="0">0</button>
+          <button class="np-btn fn" id="np-back">⌫</button>
+        </div>
+        <div class="np-row">
+          <button class="np-btn cfm" id="np-confirm" disabled>✓ 确认</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="result-modal">
+    <div class="modal">
+      <div class="big-icon" id="r-icon">🎉</div>
+      <h2 id="r-title">✅ 恭喜答对了</h2>
+      <div class="chain-recap" id="r-chain" style="display:none"></div>
+      <div class="streak-display" id="r-streak" style="display:none"></div>
+      <div class="total-stats" id="r-stats"></div>
+      <div class="modal-btns">
+        <button class="modal-btn-secondary" id="btn-back">← 返回</button>
+        <button class="modal-btn-primary" id="btn-continue">继续 →</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+// 音效模块
+var SoundFX={
+  ctx:null,muted:false,
+  init:function(){try{this.ctx=new(window.AudioContext||window.webkitAudioContext)}catch(e){}},
+  ensure:function(){if(!this.ctx)this.init();if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume()},
+  _play:function(fn){if(this.muted||!this.ctx)return;this.ensure();fn(this.ctx.currentTime)},
+  start:function(){this._play(function(t){
+    var o=SoundFX.ctx.createOscillator(),g=SoundFX.ctx.createGain();
+    o.type='sine';o.frequency.value=660;
+    g.gain.setValueAtTime(0.2,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.15);
+    o.connect(g);g.connect(SoundFX.ctx.destination);o.start(t);o.stop(t+0.15);
+  })},
+  step:function(){this._play(function(t){
+    var o=SoundFX.ctx.createOscillator(),g=SoundFX.ctx.createGain();
+    o.type='square';o.frequency.value=880;
+    g.gain.setValueAtTime(0.07,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.07);
+    o.connect(g);g.connect(SoundFX.ctx.destination);o.start(t);o.stop(t+0.09);
+  })},
+  done:function(){this._play(function(t){
+    [660,880].forEach(function(f,i){
+      var o=SoundFX.ctx.createOscillator(),g=SoundFX.ctx.createGain();
+      o.type='sine';o.frequency.value=f;var st=t+i*0.12;
+      g.gain.setValueAtTime(0.15,st);g.gain.exponentialRampToValueAtTime(0.001,st+0.2);
+      o.connect(g);g.connect(SoundFX.ctx.destination);o.start(st);o.stop(st+0.22);
+    });
+  })},
+  streak:function(){this._play(function(t){
+    [1047,1319].forEach(function(f,i){
+      var o=SoundFX.ctx.createOscillator(),g=SoundFX.ctx.createGain();
+      o.type='sine';o.frequency.value=f;var st=t+i*0.06;
+      g.gain.setValueAtTime(0.1,st);g.gain.exponentialRampToValueAtTime(0.001,st+0.14);
+      o.connect(g);g.connect(SoundFX.ctx.destination);o.start(st);o.stop(st+0.16);
+    });
+  })},
+  click:function(){this._play(function(t){
+    var o=SoundFX.ctx.createOscillator(),g=SoundFX.ctx.createGain();
+    o.type='sine';o.frequency.value=1200;
+    g.gain.setValueAtTime(0.04,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.04);
+    o.connect(g);g.connect(SoundFX.ctx.destination);o.start(t);o.stop(t+0.05);
+  })},
+  correct:function(){this._play(function(t){
+    [523,659,784].forEach(function(f,i){
+      var o=SoundFX.ctx.createOscillator(),g=SoundFX.ctx.createGain();
+      o.type='triangle';o.frequency.value=f;var st=t+i*0.08;
+      g.gain.setValueAtTime(0.15,st);g.gain.exponentialRampToValueAtTime(0.001,st+0.12);
+      o.connect(g);g.connect(SoundFX.ctx.destination);o.start(st);o.stop(st+0.15);
+    });
+  })},
+  wrong:function(){this._play(function(t){
+    [784,659,523].forEach(function(f,i){
+      var o=SoundFX.ctx.createOscillator(),g=SoundFX.ctx.createGain();
+      o.type='triangle';o.frequency.value=f;var st=t+i*0.1;
+      g.gain.setValueAtTime(0.12,st);g.gain.exponentialRampToValueAtTime(0.001,st+0.15);
+      o.connect(g);g.connect(SoundFX.ctx.destination);o.start(st);o.stop(st+0.18);
+    });
+  })}
+};
+
+var RANGE_CFG={
+  easy:{startLo:1,startHi:10,midMax:25,incMax:10},
+  medium:{startLo:1,startHi:20,midMax:50,incMax:15},
+  hard:{startLo:1,startHi:100,midMax:200,incMax:50}
+};
+var PACE_CFG={normal:3000,fast:2000,rapid:1500};
+var PACE_LABEL={normal:'标准',fast:'快速',rapid:'极速'};
+var OPS_LABEL={addsub:'加减',addsubmul:'加减乘',all:'加减乘除'};
+var RANGE_LABEL={easy:'简单',medium:'中等',hard:'困难'};
+
+var params={steps:4,range:'easy',ops:'addsub',pace:'normal'};
+var state={chain:[],currentStep:0,total:0,correct:0,streak:0,timer:null};
+var inputBuf='';
+
+// 开关点击切换
+document.querySelectorAll('.cg-btn').forEach(function(b){
+  b.addEventListener('click',function(){
+    var key=this.dataset.key;
+    var val=this.dataset.val;
+    var group=this.parentElement;
+    group.querySelectorAll('.cg-btn').forEach(function(x){x.classList.remove('active');});
+    this.classList.add('active');
+    if(key==='steps') params[key]=parseInt(val);
+    else params[key]=val;
+  });
+});
+
+function genChain(steps,rangeKey,opsMode){
+  var cfg=RANGE_CFG[rangeKey];
+  var opsPool;
+  if(opsMode==='addsub') opsPool=['+','-'];
+  else if(opsMode==='addsubmul') opsPool=['+','-','×'];
+  else opsPool=['+','-','×','÷'];
+  var MUL_MAX=6;
+  for(var a=0;a<500;a++){
+    var chain=[];var val=Math.floor(Math.random()*(cfg.startHi-cfg.startLo+1))+cfg.startLo;chain.push(val);var ok=true;
+    for(var i=0;i<steps;i++){
+      var available=[];
+      for(var oi=0;oi<opsPool.length;oi++){
+        var op=opsPool[oi];
+        if(op==='+'){if(val<cfg.midMax) available.push('+');}
+        else if(op==='-'){if(val>=2) available.push('-');}
+        else if(op==='×'){var maxMul=Math.min(MUL_MAX,Math.floor(cfg.midMax/val));if(maxMul>=2) available.push('×');}
+        else if(op==='÷'){for(var d=2;d<=Math.min(val,MUL_MAX);d++){if(val%d===0){available.push('÷');break;}}}
+      }
+      if(available.length===0){ok=false;break;}
+      var chosen=available[Math.floor(Math.random()*available.length)];
+      var n;
+      if(chosen==='+'){var hi=Math.min(cfg.midMax-val,cfg.incMax);n=Math.floor(Math.random()*hi)+1;val+=n;}
+      else if(chosen==='-'){var hi=Math.min(val-1,cfg.incMax);n=Math.floor(Math.random()*hi)+1;val-=n;}
+      else if(chosen==='×'){var maxMul=Math.min(MUL_MAX,Math.floor(cfg.midMax/val));n=Math.floor(Math.random()*(maxMul-1))+2;val*=n;}
+      else{var divs=[];for(var d=2;d<=Math.min(val,MUL_MAX);d++){if(val%d===0) divs.push(d);}n=divs[Math.floor(Math.random()*divs.length)];val=Math.floor(val/n);}
+      chain.push(chosen,n);
+    }
+    if(ok) return chain;
+  }
+  var chain=[];var val=Math.floor(Math.random()*10)+1;chain.push(val);
+  for(var i=0;i<steps;i++){var op=i%2===0?'+':'-';var n=Math.floor(Math.random()*5)+1;if(op==='+'){if(val+n>cfg.midMax){n=cfg.midMax-val;if(n<1)n=1;}val+=n;}else{n=Math.min(n,val-1);if(n<1)n=1;val-=n;}chain.push(op,n);}
+  return chain;
+}
+
+function calcResult(chain){
+  var val=chain[0];
+  for(var i=1;i<chain.length;i+=2){
+    var op=chain[i],n=chain[i+1];
+    if(op==='+') val+=n;else if(op==='-') val-=n;else if(op==='×') val*=n;else val=Math.floor(val/n);
+  }
+  return val;
+}
+
+function buildChainRecap(chain,isCorrect){
+  var val=chain[0];
+  var html='<span class="sv">'+val+'</span>';
+  for(var i=1;i<chain.length;i+=2){
+    var op=chain[i],n=chain[i+1];
+    var opChar=op==='+'?'+':op==='-'?'−':op==='×'?'×':'÷';
+    if(op==='+') val+=n;else if(op==='-') val-=n;else if(op==='×') val*=n;else val=Math.floor(val/n);
+    html+=' <span class="sep">→</span> ';
+    html+='<span class="so">'+opChar+'</span><span class="sn">'+n+'</span>';
+    html+=' <span class="sep">=</span>';
+    if(i+2>=chain.length) html+='<span class="fin">'+val+'</span>';
+    else html+='<span class="sr">'+val+'</span>';
+  }
+  return html;
+}
+
+function updateNpDisplay(){
+  var display=document.getElementById('np-display');
+  display.textContent=inputBuf||'';
+  document.getElementById('np-confirm').disabled=inputBuf.length===0;
+}
+
+function runNewProblem(){
+  state.chain=genChain(params.steps,params.range,params.ops);
+  state.currentStep=0;
+  inputBuf='';
+  document.getElementById('round-display').textContent='第 '+(state.total+1)+' 题';
+  document.getElementById('num-pad').classList.remove('show');
+  document.getElementById('progress-bar').innerHTML='';
+  updateNpDisplay();
+  var paceTime=PACE_CFG[params.pace];
+  showNextStep(paceTime);
+}
+
+function showNextStep(paceTime){
+  var chain=state.chain;
+  if(state.currentStep>=chain.length){
+    SoundFX.done();
+    document.getElementById('chain-display').textContent='?';
+    document.getElementById('chain-sub').textContent='答案是多少？';
+    document.getElementById('chain-card').classList.add('shift');
+    var bar=document.getElementById('progress-bar');
+    bar.querySelectorAll('.cp-seg').forEach(function(s){s.style.background='#f87171';s.className='cp-seg done';});
+    document.getElementById('num-pad').classList.add('show');
+    return;
+  }
+  var val=chain[state.currentStep];
+  if(state.currentStep===0){
+    SoundFX.start();
+    document.getElementById('chain-display').innerHTML='<span class="num">'+val+'</span>';
+    document.getElementById('chain-sub').textContent='记住这个数字';
+  }else{
+    SoundFX.step();
+    var op=chain[state.currentStep-1];
+    var opChar=op==='+'?'+':op==='-'?'-':op==='×'?'×':'÷';
+    document.getElementById('chain-display').innerHTML='<span class="op">'+opChar+'</span><span class="num">'+val+'</span>';
+    document.getElementById('chain-sub').textContent='心算结果...';
+  }
+  var stepIdx=(state.currentStep+1)/2;
+  var totalSteps=chain.length/2;
+  var colorMap=['#60a5fa','#34d399','#fbbf24','#f87171','#a78bfa','#f472b6','#38bdf8'];
+  var bar=document.getElementById('progress-bar');
+  if(bar.children.length===0){
+    for(var si=0;si<totalSteps;si++){
+      var seg=document.createElement('div');
+      seg.className='cp-seg';
+      seg.dataset.idx=si;
+      bar.appendChild(seg);
+    }
+  }
+  for(var si=0;si<stepIdx&&si<bar.children.length;si++){
+    var seg=bar.children[si];
+    seg.className='cp-seg done';
+    seg.style.background=colorMap[Math.min(si,colorMap.length-1)];
+  }
+  state.currentStep+=2;
+  clearTimeout(state.timer);
+  state.timer=setTimeout(function(){showNextStep(paceTime);},paceTime);
+}
+
+function checkAnswer(){
+  var ans=parseInt(inputBuf);
+  if(isNaN(ans))return;
+  var correct=calcResult(state.chain);
+  var isCorrect=(ans===correct);
+  state.total++;
+  if(isCorrect){state.correct++;state.streak++;SoundFX.correct();if(state.streak>=2)SoundFX.streak();}else{state.streak=0;SoundFX.wrong();}
+  document.getElementById('score-display').textContent=state.correct+'/'+state.total;
+
+  var icon=document.getElementById('r-icon');
+  var title=document.getElementById('r-title');
+  var recap=document.getElementById('r-chain');
+  var streak=document.getElementById('r-streak');
+  var stats=document.getElementById('r-stats');
+
+  if(isCorrect){
+    icon.textContent='🎉';
+    title.textContent='✅ 恭喜答对了';
+    recap.style.display='block';
+    recap.innerHTML='操作链：<br>'+buildChainRecap(state.chain,true);
+    if(state.streak>=2){
+      streak.style.display='block';
+      streak.textContent='🔥 连续答对 '+state.streak+' 题';
+    }else{streak.style.display='none';}
+  }else{
+    icon.textContent='😅';
+    title.textContent='❌ 还差一点点';
+    recap.style.display='block';
+    recap.innerHTML='操作链：<br>'+buildChainRecap(state.chain,false);
+    streak.style.display='none';
+  }
+  stats.textContent='正确 '+state.correct+' 题，共 '+state.total+' 题';
+  document.getElementById('result-modal').classList.add('show');
+}
+
+function startGame(){
+  state.total=0;state.correct=0;state.streak=0;
+  document.getElementById('start-screen').style.display='none';
+  document.getElementById('game-screen').classList.add('active');
+  document.getElementById('chain-card').classList.remove('shift');
+  var stepsLabel=params.steps+'步';
+  var rangeLabel=RANGE_LABEL[params.range];
+  var opsLabel=OPS_LABEL[params.ops];
+  var paceLabel=PACE_LABEL[params.pace];
+  document.getElementById('config-display').textContent=stepsLabel+' · '+rangeLabel+' · '+opsLabel+' · '+paceLabel;
+  document.getElementById('score-display').textContent='0/0';
+  runNewProblem();
+}
+
+// 数字键盘事件
+document.querySelectorAll('.np-btn[data-d]').forEach(function(b){
+  b.addEventListener('click',function(){
+    SoundFX.click();
+    inputBuf+=this.dataset.d;
+    updateNpDisplay();
+  });
+});
+document.getElementById('np-clear').addEventListener('click',function(){
+  SoundFX.click();
+  inputBuf='';updateNpDisplay();
+});
+document.getElementById('np-back').addEventListener('click',function(){
+  SoundFX.click();
+  inputBuf=inputBuf.slice(0,-1);updateNpDisplay();
+});
+document.getElementById('np-confirm').addEventListener('click',function(){SoundFX.click();checkAnswer();});
+
+// 静音开关
+document.getElementById('sound-toggle').addEventListener('click',function(){
+  SoundFX.muted=!SoundFX.muted;
+  this.textContent=SoundFX.muted?'🔇':'🔊';
+});
+document.addEventListener('click',function(){SoundFX.ensure();},{once:true});
+
+document.getElementById('btn-start').addEventListener('click',startGame);
+document.getElementById('btn-continue').addEventListener('click',function(){
+  document.getElementById('result-modal').classList.remove('show');
+  document.getElementById('chain-card').classList.remove('shift');
+  runNewProblem();
+});
+document.getElementById('btn-back').addEventListener('click',function(){
+  document.getElementById('result-modal').classList.remove('show');
+  document.getElementById('game-screen').classList.remove('active');
+  document.getElementById('start-screen').style.display='flex';
+});
+</script>
+</body>
+</html>
