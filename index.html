@@ -786,7 +786,7 @@ let loading = false;
 
 function escapeHtml(text){const d=document.createElement('div');d.appendChild(document.createTextNode(text));return d.innerHTML;}
 
-function loadMessages(){fetch(SUPABASE_URL+'/rest/v1/feedback?select=name,text,time&order=time.desc&limit=50&name=neq._detect_&name=neq._detect_waiting&name=neq._detect_result&name=neq._detect_done',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}).then(r=>r.json()).then(msgs=>{msgsContainer.innerHTML='';if(!msgs||msgs.length===0){msgsContainer.appendChild(empty);return;}
+function loadMessages(){fetch(SUPABASE_URL+'/rest/v1/feedback?select=name,text,time&order=time.desc&limit=50&name=not.like._*',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}).then(r=>r.json()).then(msgs=>{msgsContainer.innerHTML='';if(!msgs||msgs.length===0){msgsContainer.appendChild(empty);return;}
 msgs.forEach(m=>{const el=document.createElement('div');el.className='win-msg';el.innerHTML='<div class="win-msg-name">'+escapeHtml(m.name)+'</div><div class="win-msg-text">'+escapeHtml(m.text)+'</div>';msgsContainer.appendChild(el);});}).catch(()=>{});}
 
 function setStatus(msg,ok){statusEl.textContent=msg;statusEl.style.color=ok?'rgba(52,211,153,.8)':'rgba(248,113,113,.8)';setTimeout(()=>{statusEl.textContent='';},3000);}
