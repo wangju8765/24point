@@ -840,6 +840,78 @@ function doUpload(solved) {
 
 // === 给小王留言 反馈功能（模式选择页版）===
 (function(){'use strict';
+  document.getElementById("mc-modal-continue").addEventListener("click",function(){document.getElementById("mc-modal").style.display="none";document.getElementById("mc-card").style.transform="";mcRun();});
+  document.getElementById("mc-modal-back").addEventListener("click",function(){document.getElementById("mc-modal").style.display="none";document.getElementById("mc-game").style.display="none";document.getElementById("mc-start-screen").style.display="flex";document.getElementById("mc-container").style.display="none"; document.getElementById("mode-screen").style.display="flex"; });
+}
+
+// === 用户系统 ===
+var _userInfo = null;
+function getUser() {
+  if (_userInfo) return _userInfo;
+  try {
+    var raw = localStorage.getItem('24point_user');
+    if (raw) { _userInfo = JSON.parse(raw); return _userInfo; }
+  } catch(e){}
+  return null;
+}
+function saveUser(name, grade) {
+  _userInfo = { name: name, grade: parseInt(grade)||0, deviceId: getDeviceId() };
+  try { localStorage.setItem('24point_user', JSON.stringify(_userInfo)); } catch(e){}
+}
+function getDeviceId() {
+  var d = localStorage.getItem('24point_device');
+  if (!d) { d = Date.now().toString(36)+Math.random().toString(36).slice(2,6); try { localStorage.setItem('24point_device', d); } catch(e){} }
+  return d;
+}
+
+function showUserModal(callback) {
+  var modal = document.getElementById('user-modal');
+  var nameEl = document.getElementById('um-name');
+  var gradeEl = document.getElementById('um-grade');
+  var confirmBtn = document.getElementById('um-confirm');
+  var skipBtn = document.getElementById('um-skip');
+  nameEl.value = ''; gradeEl.value = ''; confirmBtn.disabled = true;
+  function check(){ confirmBtn.disabled = !(nameEl.value.trim() && gradeEl.value); }
+  nameEl.oninput = check;
+  gradeEl.onchange = check;
+  modal.style.display = 'flex';
+  nameEl.focus();
+  confirmBtn.onclick = function(){
+    saveUser(nameEl.value.trim(), gradeEl.value);
+    modal.style.display = 'none';
+    if (callback) callback();
+  };
+  skipBtn.onclick = function(){
+    saveUser('游客' + getDeviceId().slice(-4), 0);
+    modal.style.display = 'none';
+    if (callback) callback();
+  };
+}
+
+function goToModeScreen() {
+  document.getElementById('start-screen').classList.add('hidden');
+  var u = getUser();
+  if (u) {
+    document.getElementById('mode-screen').style.display = 'flex';
+  } else {
+    showUserModal(function(){ document.getElementById('mode-screen').style.display = 'flex'; });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function(){ 
+  document.getElementById('start-btn').addEventListener('click', goToModeScreen);
+  document.getElementById('mode-mathchain').addEventListener('click',function(){window.location.href='mathchain.html';});
+  document.getElementById('mode-free').addEventListener('click',function(){document.getElementById('mode-screen').style.display='none'; document.getElementById('app').style.display='flex'; init(); });
+  document.getElementById('mode-rules').addEventListener('click',function(){document.getElementById('mode-screen').style.display='none'; document.getElementById('rules-screen').style.display='flex'; });
+  document.getElementById('rules-back-btn').addEventListener('click',function(){document.getElementById('rules-screen').style.display='none'; document.getElementById('mode-screen').style.display='flex'; });
+  document.getElementById('exit-btn').addEventListener('click',function(){document.getElementById('exit-modal').classList.add('show');});
+  document.getElementById('exit-cancel').addEventListener('click',function(){document.getElementById('exit-modal').classList.remove('show');});
+  document.getElementById('exit-confirm').addEventListener('click',function(){document.getElementById('exit-modal').classList.remove('show');document.getElementById('app').style.display='none'; document.getElementById('mode-screen').style.display='flex'; });
+  // 如果已有用户信息，初始化时填入留言板
+  var u = getUser();
+  if (u) {
+    var ni = document.getElementById('win-fb-name');
+    if (ni) { ni.value = u.name; ni.readOnly = true; ni.style.color = 'rgba(255,255,255,.7)'; }
 const SUPABASE_URL = 'https://pkxmsfyzcphzvuangrzs.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBreG1zZnl6Y3BoenZ1YW5ncnpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNDkxNzcsImV4cCI6MjA5NDYyNTE3N30.K1_niR4ZylqzbDPFnmTs5HRo2aEbObkGw3V9clM1czo';
 const btn = document.getElementById('mode-fb-btn');
