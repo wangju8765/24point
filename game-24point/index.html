@@ -971,7 +971,7 @@ function goToModeScreen() {
 document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('exit-btn').addEventListener('click',function(){document.getElementById('exit-modal').classList.add('show');});
   document.getElementById('exit-cancel').addEventListener('click',function(){document.getElementById('exit-modal').classList.remove('show');});
-  document.getElementById('exit-confirm').addEventListener('click',function(){document.getElementById('exit-modal').classList.remove('show');window.location.href='./';});
+  document.getElementById('exit-confirm').addEventListener('click',function(){document.getElementById('exit-modal').classList.remove('show');window.location.href='../';});
   // 自动开始游戏
   init();
   var u = getUser();
