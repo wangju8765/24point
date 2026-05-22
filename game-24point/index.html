@@ -973,17 +973,12 @@ function goToModeScreen() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', function(){ 
-  document.getElementById('start-btn').addEventListener('click', goToModeScreen);
-  document.getElementById('mode-mathchain').addEventListener('click',function(){window.location.href='mathchain.html';});
-  document.getElementById('mode-free').addEventListener('click',function(){document.getElementById('mode-screen').style.display='none'; document.getElementById('app').style.display='flex'; init(); });
-  document.getElementById('mode-rules').addEventListener('click',function(){document.getElementById('mode-screen').style.display='none'; document.getElementById('rules-screen').style.display='flex'; });
-  document.getElementById('rules-back-btn').addEventListener('click',function(){document.getElementById('rules-screen').style.display='none'; document.getElementById('mode-screen').style.display='flex'; });
+document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('exit-btn').addEventListener('click',function(){document.getElementById('exit-modal').classList.add('show');});
   document.getElementById('exit-cancel').addEventListener('click',function(){document.getElementById('exit-modal').classList.remove('show');});
-  document.getElementById('exit-confirm').addEventListener('click',function(){document.getElementById('exit-modal').classList.remove('show');document.getElementById('app').style.display='none'; document.getElementById('mode-screen').style.display='flex'; });
-  // 如果已有用户信息，初始化时填入留言板
-  var u = getUser();
+  document.getElementById('exit-confirm').addEventListener('click',function(){document.getElementById('exit-modal').classList.remove('show');window.location.href='./';})window.location.href='./';});
+  // 自动开始游戏
+  init();
   if (u) {
     var ni = document.getElementById('win-fb-name');
     if (ni) { ni.value = u.name; ni.readOnly = true; ni.style.color = 'rgba(255,255,255,.7)'; }
