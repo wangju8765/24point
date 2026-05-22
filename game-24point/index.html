@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🃏 算24点</title>
+<title>🧃 算24点</title>
 <script>
 var _hmt = _hmt || [];
 (function() {
@@ -167,8 +167,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
 .win-msg{background:rgba(255,255,255,.06);border-radius:8px;padding:7px 10px;flex-shrink:0}
 .win-msg-name{font-size:11px;font-weight:600;color:rgba(255,255,255,.55);margin-bottom:2px}
 .win-msg-text{font-size:13px;color:rgba(255,255,255,.85);line-height:1.3;word-break:break-word}
-</style>
-</style>
+</style></style>
 </head>
 <body>
 <div id="app">
@@ -972,9 +971,10 @@ function goToModeScreen() {
 document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('exit-btn').addEventListener('click',function(){document.getElementById('exit-modal').classList.add('show');});
   document.getElementById('exit-cancel').addEventListener('click',function(){document.getElementById('exit-modal').classList.remove('show');});
-  document.getElementById('exit-confirm').addEventListener('click',function(){document.getElementById('exit-modal').classList.remove('show');window.location.href='./';})window.location.href='./';})window.location.href='./';});
+  document.getElementById('exit-confirm').addEventListener('click',function(){document.getElementById('exit-modal').classList.remove('show');window.location.href='./';});
   // 自动开始游戏
   init();
+  var u = getUser();
   if (u) {
     var ni = document.getElementById('win-fb-name');
     if (ni) { ni.value = u.name; ni.readOnly = true; ni.style.color = 'rgba(255,255,255,.7)'; }
