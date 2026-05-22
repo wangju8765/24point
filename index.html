@@ -182,6 +182,37 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,Blink
     <button class="s-btn" id="start-btn">开 始 游 戏</button>
   </div>
 </div>
+
+
+<div id="user-modal">
+  <div class="um-box">
+    <div class="um-title">👋 先认识一下</div>
+    <div class="um-field">
+      <div class="um-label">你的名字</div>
+      <input type="text" id="um-name" placeholder="输入你的名字" maxlength="20">
+    </div>
+    <div class="um-field">
+      <div class="um-label">年级</div>
+      <select id="um-grade">
+        <option value="">— 请选择 —</option>
+        <option value="1">一年级</option>
+        <option value="2">二年级</option>
+        <option value="3">三年级</option>
+        <option value="4">四年级</option>
+        <option value="5">五年级</option>
+        <option value="6">六年级</option>
+        <option value="7">七年级</option>
+        <option value="8">八年级</option>
+        <option value="9">九年级</option>
+        <option value="10">九年级及以上（成人）</option>
+      </select>
+    </div>
+    <button class="um-btn" id="um-confirm" disabled>确定</button>
+    <button class="um-skip" id="um-skip">跳过，随便看看 →</button>
+  </div>
+</div>
+
+
 <div id="mode-screen">
   <div class="mode-group">
     <button class="btn-primary" id="mode-free">🎮 自由练习</button>
