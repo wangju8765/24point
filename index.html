@@ -999,6 +999,12 @@ function goToModeScreen() {
 }
 
 document.addEventListener('DOMContentLoaded', function(){ 
+  // 如果已经有用户信息（不是第一次来），直接进入模式选择页
+  var u = getUser();
+  if (u) {
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('mode-screen').style.display = 'flex';
+  }
   document.getElementById('start-btn').addEventListener('click', goToModeScreen);
   document.getElementById('mode-mathchain').addEventListener('click',function(){window.location.href='mathchain/';});
   document.getElementById('mode-free').addEventListener('click',function(){window.location.href='game-24point/'; });
