@@ -48,6 +48,24 @@ MEMORY.md only loads in main (direct) sessions — not in shared contexts.
 - 多步骤任务做完才能停
 - 实时同步进度：开始说"在弄"，等待说"稍等"，完成后主动汇报
 
+## 项目管理机制
+
+整个机制由这些文件配合运行：
+
+```
+PROJECTS.md          ← 所有项目的索引和状态（全局）
+projects/xxx/        ← 每个项目一个目录
+  ├── README.md      ← 项目说明（目标+状态+负责人）
+  ├── PLAN.md        ← 规划进度（里程碑+任务清单）
+  └── LOG.md         ← 操作日志（每次工作session记录）
+```
+
+**使用规则：**
+1. 新建项目时：建目录 + README + PLAN + LOG，然后更新 PROJECTS.md
+2. 项目状态变化时（上线/归档/暂停）：更新 PROJECTS.md + 项目 PLAN.md
+3. 每次工作 session 结束时：更新该项目的 LOG.md
+4. HEARTBEAT 检查时会确认 LOG.md 是否需要补充
+
 ## 地基原则（2026-05-25 确立）
 
 **用户看过并确认过的产物 = 地基。**
